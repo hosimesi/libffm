@@ -787,6 +787,41 @@ ffm_int ffm_save_model(ffm_model *model, char const *path)
     return 0;
 }
 
+ffm_int ffm_save_production_model(ffm_model *model)
+{
+    ofstream f_out("games_ffm_cvr.model");
+    if(!f_out.is_open())
+        return 1;
+
+    f_out << "{";
+
+    ffm_float *ptr = model->W;
+    for(ffm_int j = 0; j < model->n; j++)
+    {
+        f_out << "\"key\":\"" << j << "\",\"value\":{";
+        
+        for(ffm_int f = 0; f < model->m; f++)
+        {
+            f_out << "\"" << f << "\":[";
+            for(ffm_int d = 0; d < model->k; d++, ptr++) {
+                if(d == model->k - 1) {
+                    if(f == model->m - 1) {
+                        f_out << *ptr << "]";
+                    } else {
+                        f_out << *ptr << "],";
+                    }
+                } else {
+                    f_out << *ptr << ",";
+                }
+            }
+        }
+        f_out << "}}\n";
+    }
+
+
+    return 0;
+}
+
 ffm_model* ffm_load_model(char const *path)
 {
     ifstream f_in(path);

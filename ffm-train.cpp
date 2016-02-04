@@ -206,6 +206,7 @@ int train(Option opt)
         ffm_model *model = ffm_train_with_validation(tr, va, opt.param);
 
         status = ffm_save_model(model, opt.model_path.c_str());
+        status = ffm_save_production_model(model);
 
         ffm_destroy_model(&model);
     }

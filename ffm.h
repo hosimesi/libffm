@@ -61,6 +61,8 @@ void ffm_destroy_problem(struct ffm_problem **prob);
 
 ffm_int ffm_save_model(ffm_model *model, char const *path);
 
+ffm_int ffm_save_production_model(ffm_model *model);
+
 ffm_model* ffm_load_model(char const *path);
 
 void ffm_destroy_model(struct ffm_model **model);
