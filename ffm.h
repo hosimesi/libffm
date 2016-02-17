@@ -2,7 +2,7 @@
 #define _LIBFFM_H
 
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 {
 
 namespace ffm
@@ -61,7 +61,7 @@ void ffm_destroy_problem(struct ffm_problem **prob);
 
 ffm_int ffm_save_model(ffm_model *model, char const *path);
 
-ffm_int ffm_save_production_model(ffm_model *model);
+ffm_int ffm_save_production_model(ffm_model *model, char const *path, char const *key_prefix);
 
 ffm_model* ffm_load_model(char const *path);
 

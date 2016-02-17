@@ -1,4 +1,4 @@
-#pragma GCC diagnostic ignored "-Wunused-result" 
+#pragma GCC diagnostic ignored "-Wunused-result"
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -24,6 +24,8 @@ string train_help()
 "-r <eta>: set learning rate (default 0.2)\n"
 "-s <nr_threads>: set number of threads (default 1)\n"
 "-p <path>: set path to the validation set\n"
+"-f <path>: set path for production model file\n"
+"-m <prefix>: set key prefix for production model\n"
 "-v <fold>: set the number of folds for cross-validation\n"
 "--quiet: quiet model (no output)\n"
 "--no-norm: disable instance-wise normalization\n"
@@ -35,7 +37,7 @@ string train_help()
 struct Option
 {
     Option() : param(ffm_get_default_param()), nr_folds(1), do_cv(false), on_disk(false) {}
-    string tr_path, va_path, model_path;
+    string tr_path, va_path, model_path, production_model_path, key_prefix;
     ffm_parameter param;
     ffm_int nr_folds;
     bool do_cv, on_disk;
@@ -127,6 +129,20 @@ Option parse_option(int argc, char **argv)
             i++;
             opt.va_path = args[i];
         }
+        else if(args[i].compare("-m") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify model key prefix after -m");
+            i++;
+            opt.key_prefix = args[i];
+        }
+        else if(args[i].compare("-f") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify production model file path after -f");
+            i++;
+            opt.production_model_path = args[i];
+        }
         else if(args[i].compare("--no-norm") == 0)
         {
             opt.param.normalization = false;
@@ -206,7 +222,10 @@ int train(Option opt)
         ffm_model *model = ffm_train_with_validation(tr, va, opt.param);
 
         status = ffm_save_model(model, opt.model_path.c_str());
-        status = ffm_save_production_model(model);
+
+        // Production model
+        if(opt.production_model_path.c_str() != NULL)
+          status = ffm_save_production_model(model, opt.production_model_path.c_str(), opt.key_prefix.c_str());
 
         ffm_destroy_model(&model);
     }
