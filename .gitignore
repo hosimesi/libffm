@@ -1,3 +1,10 @@
 ffm-predict
 ffm-train
 ffm.o
+timer.o
+
+*.bin
+
+model/
+build/
+data/
