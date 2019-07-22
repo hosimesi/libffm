@@ -1,6 +1,7 @@
 #ifndef _LIBFFM_H
 #define _LIBFFM_H
 
+#include <fstream>
 #include <string>
 
 namespace ffm {
@@ -36,13 +37,30 @@ struct ffm_parameter {
   bool auto_stop = false;
 };
 
+class WeightReader {
+public:
+  WeightReader();
+  explicit WeightReader(string path);
+  ~WeightReader();
+
+  ffm_float read(ffm_int index);
+
+private:
+  ifstream f;
+  vector<ffm_float> cache;
+};
+
 void ffm_read_problem_to_disk(string txt_path, string bin_path);
 
 void ffm_save_model(ffm_model &model, string path);
 
+void ffm_save_old_style_model(ffm_model &model, string path);
+
+void ffm_save_model_weights(ffm_model &model, string path, string key_prefix);
+
 ffm_model ffm_load_model(string path);
 
-ffm_model ffm_train_on_disk(string Tr_path, string Va_path,
+ffm_model ffm_train_on_disk(string Tr_path, string Va_path, string iw_path,
                             ffm_parameter param);
 
 ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model &model);

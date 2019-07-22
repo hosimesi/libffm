@@ -29,8 +29,10 @@ the problem
 #include <memory>
 #include <new>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <stdexcept>
+#include <stdio.h>
 #include <string>
 #include <vector>
 
@@ -70,11 +72,37 @@ ffm_long get_w_size(ffm_model &model) {
   return (ffm_long)model.n * model.m * k_aligned * 2;
 }
 
+} // unnamed namespace
+
+WeightReader::WeightReader(std::string path) {
+  f.open(path, ios::in);
+
+  string line;
+  ffm_float iw;
+  while (getline(f, line)) {
+    int result = sscanf(line.c_str(), "%f", &iw);
+    if (result == EOF) {
+      break;
+    }
+    cache.push_back(iw);
+  }
+}
+
+WeightReader::~WeightReader() { f.close(); }
+
+ffm_float WeightReader::read(ffm_int index) {
+  // TODO(c-bata): need to access O(1) after converting flatbuffer.
+  if (index > (int)cache.size()) {
+    return static_cast<ffm_float>(-1.0);
+  }
+  return cache[index];
+}
+
 #if defined USESSE
 inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
                      ffm_model &model, ffm_float kappa = 0, ffm_float eta = 0,
-                     ffm_float lambda = 0, bool do_update = false) {
-
+                     ffm_float lambda = 0, ffm_float iw = 1.0,
+                     bool do_update = false) {
   ffm_int align0 = 2 * get_k_aligned(model.k);
   ffm_int align1 = model.m * align0;
 
@@ -166,8 +194,8 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
 
 inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
                      ffm_model &model, ffm_float kappa = 0, ffm_float eta = 0,
-                     ffm_float lambda = 0, bool do_update = false) {
-
+                     ffm_float lambda = 0, ffm_float iw = 1.0,
+                     bool do_update = false) {
   ffm_int align0 = 2 * get_k_aligned(model.k);
   ffm_int align1 = model.m * align0;
 
@@ -201,8 +229,8 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
           wg1[d] += g1 * g1;
           wg2[d] += g2 * g2;
 
-          w1[d] -= eta / sqrt(wg1[d]) * g1;
-          w2[d] -= eta / sqrt(wg2[d]) * g2;
+          w1[d] -= eta / sqrt(wg1[d]) * g1 * iw;
+          w2[d] -= eta / sqrt(wg2[d]) * g2 * iw;
         }
       } else {
         for (ffm_int d = 0; d < align0; d += kALIGN * 2)
@@ -285,12 +313,13 @@ struct disk_problem_meta {
 struct problem_on_disk {
   disk_problem_meta meta;
   vector<ffm_float> Y;
+  vector<ffm_float> IW;
   vector<ffm_float> R;
   vector<ffm_long> P;
   vector<ffm_node> X;
   vector<ffm_long> B;
 
-  problem_on_disk(string path) {
+  problem_on_disk(string path, string iw_path = "") {
     f.open(path, ios::in | ios::binary);
     if (f.good()) {
       f.read(reinterpret_cast<char *>(&meta), sizeof(disk_problem_meta));
@@ -298,6 +327,13 @@ struct problem_on_disk {
       B.resize(meta.num_blocks);
       f.read(reinterpret_cast<char *>(B.data()),
              sizeof(ffm_long) * meta.num_blocks);
+    }
+
+    if (!iw_path.empty()) {
+      WeightReader wfr(iw_path);
+      wr = &wfr;
+    } else {
+      wr = nullptr;
     }
   }
 
@@ -312,6 +348,10 @@ struct problem_on_disk {
 
     Y.resize(l);
     f.read(reinterpret_cast<char *>(Y.data()), sizeof(ffm_float) * l);
+
+    if (wr != nullptr) {
+      *IW.data() = wr->read(1);
+    }
 
     R.resize(l);
     f.read(reinterpret_cast<char *>(R.data()), sizeof(ffm_float) * l);
@@ -329,6 +369,7 @@ struct problem_on_disk {
 
 private:
   ifstream f;
+  WeightReader *wr;
 };
 
 uint64_t hashfile(string txt_path, bool one_block = false) {
@@ -367,7 +408,6 @@ uint64_t hashfile(string txt_path, bool one_block = false) {
 }
 
 void txt2bin(string txt_path, string bin_path) {
-
   FILE *f_txt = fopen(txt_path.c_str(), "r");
   if (f_txt == nullptr)
     throw;
@@ -470,8 +510,6 @@ bool check_same_txt_bin(string txt_path, string bin_path) {
   return true;
 }
 
-} // unnamed namespace
-
 ffm_model::~ffm_model() {
   if (W != nullptr) {
 #ifndef USESSE
@@ -488,7 +526,6 @@ ffm_model::~ffm_model() {
 }
 
 void ffm_read_problem_to_disk(string txt_path, string bin_path) {
-
   Timer timer;
 
   cout << "First check if the text file has already been converted to binary "
@@ -507,10 +544,9 @@ void ffm_read_problem_to_disk(string txt_path, string bin_path) {
   }
 }
 
-ffm_model ffm_train_on_disk(string tr_path, string va_path,
+ffm_model ffm_train_on_disk(string tr_path, string va_path, string iw_path,
                             ffm_parameter param) {
-
-  problem_on_disk tr(tr_path);
+  problem_on_disk tr(std::move(tr_path), std::move(iw_path));
   problem_on_disk va(va_path);
 
   ffm_model model = init_model(tr.meta.n, tr.meta.m, param);
@@ -558,6 +594,8 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path,
 
         ffm_float y = prob.Y[i];
 
+        ffm_float iw = prob.IW[i];
+
         ffm_node *begin = &prob.X[prob.P[i]];
 
         ffm_node *end = &prob.X[prob.P[i + 1]];
@@ -571,10 +609,9 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path,
         loss += log1p(expnyt);
 
         if (do_update) {
-
           ffm_float kappa = -y * expnyt / (1 + expnyt);
 
-          wTx(begin, end, r, model, kappa, param.eta, param.lambda, true);
+          wTx(begin, end, r, model, kappa, param.eta, param.lambda, true, iw);
         }
       }
     }
@@ -637,6 +674,53 @@ void ffm_save_model(ffm_model &model, string path) {
     f_out.write(reinterpret_cast<char *>(model.W + offset),
                 sizeof(ffm_float) * size);
     offset = next_offset;
+  }
+}
+
+void ffm_save_old_style_model(ffm_model &model, string path) {
+  ofstream f_out(path, ios::out | ios::binary);
+
+  f_out << "n " << model.n << "\n";
+  f_out << "m " << model.m << "\n";
+  f_out << "k " << model.k << "\n";
+  f_out << "normalization " << model.normalization << "\n";
+
+  ffm_float *ptr = model.W;
+  for (ffm_int j = 0; j < model.n; j++) {
+    for (ffm_int f = 0; f < model.m; f++) {
+      f_out << "w" << j << "," << f << " ";
+      for (ffm_int d = 0; d < model.k; d++, ptr++)
+        f_out << *ptr << " ";
+      f_out << "\n";
+    }
+  }
+}
+
+void ffm_save_model_weights(ffm_model &model, string path, string key_prefix) {
+  ofstream f_out(path, ios::out | ios::binary);
+
+  ffm_float *ptr = model.W;
+  for (ffm_int j = 0; j < model.n; j++) {
+    if (!key_prefix.empty())
+      f_out << "{\"key\":\"" << key_prefix << "_" << j << "\",\"value\":{";
+    else
+      f_out << "{\"key\":\"" << j << "\",\"value\":{";
+
+    for (ffm_int f = 0; f < model.m; f++) {
+      f_out << "\"" << f << "\":[";
+      for (ffm_int d = 0; d < model.k; d++, ptr++) {
+        if (d == model.k - 1) {
+          if (f == model.m - 1) {
+            f_out << *ptr << "]";
+          } else {
+            f_out << *ptr << "],";
+          }
+        } else {
+          f_out << *ptr << ",";
+        }
+      }
+    }
+    f_out << "}}\n";
   }
 }
 

@@ -27,3 +27,6 @@ endif(USE_OPENMP)
 add_library(ffm SHARED ffm.cpp timer.cpp)
 add_executable(ffm-train ffm-train.cpp ffm.cpp timer.cpp)
 add_executable(ffm-predict ffm-predict.cpp ffm.cpp timer.cpp)
+
+# testing
+add_subdirectory(tests)
