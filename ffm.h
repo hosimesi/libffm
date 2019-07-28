@@ -27,6 +27,11 @@ struct ffm_problem {
   ffm_float *Y;
 };
 
+struct ffm_importance_weights {
+    ffm_int l;
+    ffm_float *W;
+};
+
 struct ffm_model {
   ffm_int n;
   ffm_int m;
@@ -48,6 +53,8 @@ struct ffm_parameter {
 };
 
 ffm_problem *ffm_read_problem(char const *path);
+
+ffm_importance_weights *ffm_read_importance_weights(char const *path);
 
 int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path);
 

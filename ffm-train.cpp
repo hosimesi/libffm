@@ -24,6 +24,7 @@ string train_help() {
                 "-p <path>: set path to the validation set\n"
                 "-f <path>: set path for production model file\n"
                 "-m <prefix>: set key prefix for production model\n"
+                "-W <path>: set path for importance weights file\n"
                 "-v <fold>: set the number of folds for cross-validation\n"
                 "--quiet: quiet model (no output)\n"
                 "--no-norm: disable instance-wise normalization\n"
@@ -39,6 +40,7 @@ struct Option {
       : param(ffm_get_default_param()), nr_folds(1), do_cv(false),
         on_disk(false) {}
   string tr_path, va_path, model_path, production_model_path, key_prefix;
+  string importance_weights_path;
   ffm_parameter param;
   ffm_int nr_folds;
   bool do_cv, on_disk;
@@ -126,6 +128,11 @@ Option parse_option(int argc, char **argv) {
             "need to specify production model file path after -f");
       i++;
       opt.production_model_path = args[i];
+    } else if (args[i].compare("-W") == 0) {
+      if (i == argc - 1)
+        throw invalid_argument("need to specify weights file path after -W");
+      i++;
+      opt.importance_weights_path = args[i];
     } else if (args[i].compare("--no-norm") == 0) {
       opt.param.normalization = false;
     } else if (args[i].compare("--quiet") == 0) {
@@ -163,6 +170,22 @@ int train(Option opt) {
   if (tr == nullptr) {
     cerr << "cannot load " << opt.tr_path << endl << flush;
     return 1;
+  }
+
+  ffm_importance_weights *iw = nullptr;
+  if (!opt.importance_weights_path.empty()) {
+      iw = ffm_read_importance_weights(opt.importance_weights_path.c_str());
+      if (iw == nullptr) {
+          cerr << "cannot load " << opt.importance_weights_path << endl << flush;
+          return 1;
+      }
+
+      if (iw->l != tr->l) {
+        cerr << "The length of training and weights should be equal:" << endl;
+        cerr << "training file:" << tr->l << endl;
+        cerr << "weights file:" << iw->l << endl << flush;
+        return 1;
+      }
   }
 
   ffm_problem *va = nullptr;

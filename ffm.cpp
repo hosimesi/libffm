@@ -589,6 +589,41 @@ ffm_problem *ffm_read_problem(char const *path) {
   return prob;
 }
 
+ffm_importance_weights *ffm_read_importance_weights(char const *path) {
+  if (strlen(path) == 0)
+    return nullptr;
+
+  FILE *f = fopen(path, "r");
+  if (f == nullptr)
+    return nullptr;
+
+  ffm_importance_weights *weights = new ffm_importance_weights;
+  weights->l = 0;
+  weights->W = nullptr;
+
+  char line[kMaxLineSize];
+
+  ffm_long nnz = 0;
+  for (; fgets(line, kMaxLineSize, f) != nullptr; weights->l++) {
+    strtok(line, " \t");
+    for (;; nnz++) {
+      char *ptr = strtok(nullptr, " \t");
+      if (ptr == nullptr || *ptr == '\n')
+        break;
+    }
+  }
+  rewind(f);
+
+  weights->W = new ffm_float[weights->l];
+
+  for (ffm_int i = 0; fgets(line, kMaxLineSize, f) != nullptr; i++) {
+    ffm_float iw = (ffm_float)atof(line);
+    weights->W[i] = iw;
+  }
+  fclose(f);
+  return weights;
+}
+
 int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path) {
   FILE *f_txt = fopen(txt_path, "r");
   if (f_txt == nullptr)
