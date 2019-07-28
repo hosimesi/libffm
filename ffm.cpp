@@ -31,7 +31,9 @@ ffm_int const kCHUNK_SIZE = 10000000;
 ffm_int const kMaxLineSize = 100000;
 
 inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
-                     ffm_model &model, ffm_float kappa = 0, ffm_float eta = 0,
+                     ffm_model &model,
+                     ffm_float iw=1.0f,
+                     ffm_float kappa = 0, ffm_float eta = 0,
                      ffm_float lambda = 0, bool do_update = false) {
   ffm_long align0 = (ffm_long)model.k * 2;
   ffm_long align1 = (ffm_long)model.m * align0;
@@ -256,6 +258,7 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
       ffm_int i = order[ii];
 
       ffm_float y = tr->Y[i];
+      ffm_float iw = iws->W[i];
 
       ffm_node *begin = &tr->X[tr->P[i]];
 
@@ -271,7 +274,7 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
       ffm_float kappa = -y * expnyt / (1 + expnyt);
 
-      wTx(begin, end, r, *model, kappa, param.eta, param.lambda, true);
+      wTx(begin, end, r, *model, iw, kappa, param.eta, param.lambda, true);
     }
 
     if (!param.quiet) {
