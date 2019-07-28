@@ -8,12 +8,14 @@ Table of Contents
 =================
 
 - Overfitting and Early Stopping
+- Specifying the importance weights
 - Installation
 - Data Format
 - Command Line Usage
 - Examples
 - Library Usage
 - OpenMP
+- Building macOS Binaries
 - Building Windows Binaries
 
 
@@ -74,6 +76,16 @@ stop at the iteration that reaches the best validation loss:
        8      0.42362      0.46999
     Auto-stop. Use model at 7th iteration.
 
+Specifying the importance weights
+=================================
+Usage:
+
+    use '-W weight_file' to assign importance weights for each training data.
+    Please make sure all importance weights are non-negative.
+
+Example:
+
+    $ ./ffm-train -p va.ffm -W weights.txt -l 0.00002 tr.ffm
 
 Installation
 ============
@@ -321,6 +333,20 @@ platform, then please comment out the following lines in Makefile.
 Note: Please always run `make clean all' if these flags are changed.
 
 
+Building macOS Binaries
+=======================
+
+Apple clang (use libomp)
+
+    brew install libomp
+    make OMP_CXXFLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" OMP_LDFLAGS="-L$(brew --prefix libomp)/lib -lomp"
+
+Using gcc (installed by homebrew)
+
+    brew install gcc
+    make CXX="g++-8"
+
+Note: replace "8" with version of gcc installed on your machine
 
 Building Windows Binaries
 =========================
