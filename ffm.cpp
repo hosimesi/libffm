@@ -197,7 +197,9 @@ vector<ffm_float> normalize(ffm_problem &prob) {
 }
 
 shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
-                            ffm_parameter param, ffm_problem *va = nullptr) {
+                            ffm_parameter param,
+                            ffm_problem *va = nullptr,
+                            ffm_importance_weights *iws = nullptr) {
 #if defined USEOMP
   ffm_int old_nr_threads = omp_get_num_threads();
   omp_set_num_threads(param.nr_threads);
@@ -322,197 +324,6 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
   }
 
   shrink_model(*model, param.k);
-
-#if defined USEOMP
-  omp_set_num_threads(old_nr_threads);
-#endif
-
-  return model;
-}
-
-// TODO: This function will be merged with train().
-shared_ptr<ffm_model> train_on_disk(string tr_path, string va_path,
-                                    ffm_parameter param) {
-#if defined USEOMP
-  ffm_int old_nr_threads = omp_get_num_threads();
-  omp_set_num_threads(param.nr_threads);
-#endif
-
-  FILE *f_tr = fopen(tr_path.c_str(), "rb");
-  FILE *f_va = nullptr;
-  if (!va_path.empty())
-    f_va = fopen(va_path.c_str(), "rb");
-
-  ffm_int m, n, max_l;
-  ffm_long max_nnz;
-  fread(&m, sizeof(ffm_int), 1, f_tr);
-  fread(&n, sizeof(ffm_int), 1, f_tr);
-  fread(&max_l, sizeof(ffm_int), 1, f_tr);
-  fread(&max_nnz, sizeof(ffm_long), 1, f_tr);
-
-  shared_ptr<ffm_model> model = shared_ptr<ffm_model>(
-      init_model(n, m, param), [](ffm_model *ptr) { ffm_destroy_model(&ptr); });
-
-  vector<ffm_float> Y;
-  Y.reserve(max_l);
-  vector<ffm_float> R;
-  R.reserve(max_l);
-  vector<ffm_long> P;
-  P.reserve(max_l + 1);
-  vector<ffm_node> X;
-  X.reserve(max_nnz);
-
-  bool auto_stop = param.auto_stop && !va_path.empty();
-
-  ffm_int k_aligned = (ffm_int)ceil((ffm_double)param.k / kALIGN) * kALIGN;
-  ffm_long w_size = (ffm_long)model->n * model->m * k_aligned * 2;
-  vector<ffm_float> prev_W;
-  if (auto_stop)
-    prev_W.assign(w_size, 0);
-  ffm_double best_va_loss = numeric_limits<ffm_double>::max();
-
-  if (!param.quiet) {
-    if (param.auto_stop && va_path.empty())
-      cerr << "warning: ignoring auto-stop because there is no validation set"
-           << endl;
-    cout.width(4);
-    cout << "iter";
-    cout.width(13);
-    cout << "tr_logloss";
-    if (!va_path.empty()) {
-      cout.width(13);
-      cout << "va_logloss";
-    }
-    cout << endl;
-  }
-
-  for (ffm_int iter = 1; iter <= param.nr_iters; iter++) {
-    ffm_double tr_loss = 0;
-
-    fseek(f_tr, 3 * sizeof(ffm_int) + sizeof(ffm_long), SEEK_SET);
-
-    ffm_int tr_l = 0;
-    while (true) {
-      ffm_int l;
-      fread(&l, sizeof(ffm_int), 1, f_tr);
-      tr_l += l;
-      if (l == 0)
-        break;
-
-      Y.resize(l);
-      fread(Y.data(), sizeof(ffm_float), l, f_tr);
-
-      R.resize(l);
-      fread(R.data(), sizeof(ffm_float), l, f_tr);
-
-      P.resize(l + 1);
-      fread(P.data(), sizeof(ffm_long), l + 1, f_tr);
-
-      X.resize(P[l]);
-      fread(X.data(), sizeof(ffm_node), P[l], f_tr);
-
-#if defined USEOMP
-#pragma omp parallel for schedule(static) reduction(+ : tr_loss)
-#endif
-      for (ffm_int i = 0; i < l; i++) {
-        ffm_float y = Y[i];
-
-        ffm_node *begin = &X[P[i]];
-
-        ffm_node *end = &X[P[i + 1]];
-
-        ffm_float r = param.normalization ? R[i] : 1;
-
-        ffm_float t = wTx(begin, end, r, *model);
-
-        ffm_float expnyt = exp(-y * t);
-
-        tr_loss += log(1 + expnyt);
-
-        ffm_float kappa = -y * expnyt / (1 + expnyt);
-
-        wTx(begin, end, r, *model, kappa, param.eta, param.lambda, true);
-      }
-    }
-
-    if (!param.quiet) {
-      tr_loss /= tr_l;
-
-      cout.width(4);
-      cout << iter;
-      cout.width(13);
-      cout << fixed << setprecision(5) << tr_loss;
-
-      if (f_va != nullptr) {
-        fseek(f_va, 3 * sizeof(ffm_int) + sizeof(ffm_long), SEEK_SET);
-
-        ffm_int va_l = 0;
-        ffm_double va_loss = 0;
-        while (true) {
-          ffm_int l;
-          fread(&l, sizeof(ffm_int), 1, f_va);
-          va_l += l;
-          if (l == 0)
-            break;
-
-          vector<ffm_float> Y(l);
-          fread(Y.data(), sizeof(ffm_float), l, f_va);
-
-          vector<ffm_float> R(l);
-          fread(R.data(), sizeof(ffm_float), l, f_va);
-
-          vector<ffm_long> P(l + 1);
-          fread(P.data(), sizeof(ffm_long), l + 1, f_va);
-
-          vector<ffm_node> X(P[l]);
-          fread(X.data(), sizeof(ffm_node), P[l], f_va);
-
-#if defined USEOMP
-#pragma omp parallel for schedule(static) reduction(+ : va_loss)
-#endif
-          for (ffm_int i = 0; i < l; i++) {
-            ffm_float y = Y[i];
-
-            ffm_node *begin = &X[P[i]];
-
-            ffm_node *end = &X[P[i + 1]];
-
-            ffm_float r = param.normalization ? R[i] : 1;
-
-            ffm_float t = wTx(begin, end, r, *model);
-
-            ffm_float expnyt = exp(-y * t);
-
-            va_loss += log(1 + expnyt);
-          }
-        }
-        va_loss /= va_l;
-
-        cout.width(13);
-        cout << fixed << setprecision(5) << va_loss;
-
-        if (auto_stop) {
-          if (va_loss > best_va_loss) {
-            memcpy(model->W, prev_W.data(), w_size * sizeof(ffm_float));
-            cout << endl
-                 << "Auto-stop. Use model at " << iter - 1 << "th iteration."
-                 << endl;
-            break;
-          } else {
-            memcpy(prev_W.data(), model->W, w_size * sizeof(ffm_float));
-            best_va_loss = va_loss;
-          }
-        }
-      }
-      cout << endl;
-    }
-  }
-
-  shrink_model(*model, param.k);
-
-  fclose(f_tr);
-  if (!va_path.empty())
-    fclose(f_va);
 
 #if defined USEOMP
   omp_set_num_threads(old_nr_threads);
@@ -847,12 +658,13 @@ ffm_parameter ffm_get_default_param() {
 }
 
 ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
+                                     ffm_importance_weights *iws,
                                      ffm_parameter param) {
   vector<ffm_int> order(tr->l);
   for (ffm_int i = 0; i < tr->l; i++)
     order[i] = i;
 
-  shared_ptr<ffm_model> model = train(tr, order, param, va);
+  shared_ptr<ffm_model> model = train(tr, order, param, va, iws);
 
   ffm_model *model_ret = new ffm_model;
 
@@ -865,32 +677,6 @@ ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
   model->W = nullptr;
 
   return model_ret;
-}
-
-ffm_model *ffm_train(ffm_problem *prob, ffm_parameter param) {
-  return ffm_train_with_validation(prob, nullptr, param);
-}
-
-ffm_model *ffm_train_with_validation_on_disk(char const *tr_path,
-                                             char const *va_path,
-                                             ffm_parameter param) {
-  shared_ptr<ffm_model> model = train_on_disk(tr_path, va_path, param);
-
-  ffm_model *model_ret = new ffm_model;
-
-  model_ret->n = model->n;
-  model_ret->m = model->m;
-  model_ret->k = model->k;
-  model_ret->normalization = model->normalization;
-
-  model_ret->W = model->W;
-  model->W = nullptr;
-
-  return model_ret;
-}
-
-ffm_model *ffm_train_on_disk(char const *prob_path, ffm_parameter param) {
-  return ffm_train_with_validation_on_disk(prob_path, "", param);
 }
 
 ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model) {

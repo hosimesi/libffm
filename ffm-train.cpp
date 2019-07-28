@@ -29,21 +29,18 @@ string train_help() {
                 "--quiet: quiet model (no output)\n"
                 "--no-norm: disable instance-wise normalization\n"
                 "--no-rand: disable random update\n"
-                "--on-disk: perform on-disk training (a temporary file "
                 "<training_set_file>.bin will be generated)\n"
                 "--auto-stop: stop at the iteration that achieves the best "
                 "validation loss (must be used with -p)\n");
 }
 
 struct Option {
-  Option()
-      : param(ffm_get_default_param()), nr_folds(1), do_cv(false),
-        on_disk(false) {}
+  Option() : param(ffm_get_default_param()), nr_folds(1), do_cv(false) {}
   string tr_path, va_path, model_path, production_model_path, key_prefix;
   string importance_weights_path;
   ffm_parameter param;
   ffm_int nr_folds;
-  bool do_cv, on_disk;
+  bool do_cv;
 };
 
 string basename(string path) {
@@ -139,8 +136,6 @@ Option parse_option(int argc, char **argv) {
       opt.param.quiet = true;
     } else if (args[i].compare("--no-rand") == 0) {
       opt.param.random = false;
-    } else if (args[i].compare("--on-disk") == 0) {
-      opt.on_disk = true;
     } else if (args[i].compare("--auto-stop") == 0) {
       opt.param.auto_stop = true;
     } else {
@@ -174,18 +169,18 @@ int train(Option opt) {
 
   ffm_importance_weights *iw = nullptr;
   if (!opt.importance_weights_path.empty()) {
-      iw = ffm_read_importance_weights(opt.importance_weights_path.c_str());
-      if (iw == nullptr) {
-          cerr << "cannot load " << opt.importance_weights_path << endl << flush;
-          return 1;
-      }
+    iw = ffm_read_importance_weights(opt.importance_weights_path.c_str());
+    if (iw == nullptr) {
+      cerr << "cannot load " << opt.importance_weights_path << endl << flush;
+      return 1;
+    }
 
-      if (iw->l != tr->l) {
-        cerr << "The length of training and weights should be equal:" << endl;
-        cerr << "training file:" << tr->l << endl;
-        cerr << "weights file:" << iw->l << endl << flush;
-        return 1;
-      }
+    if (iw->l != tr->l) {
+      cerr << "The length of training and weights should be equal:" << endl;
+      cerr << "training file:" << tr->l << endl;
+      cerr << "weights file:" << iw->l << endl << flush;
+      return 1;
+    }
   }
 
   ffm_problem *va = nullptr;
@@ -202,7 +197,7 @@ int train(Option opt) {
   if (opt.do_cv) {
     ffm_cross_validation(tr, opt.nr_folds, opt.param);
   } else {
-    ffm_model *model = ffm_train_with_validation(tr, va, opt.param);
+    ffm_model *model = ffm_train_with_validation(tr, va, iw, opt.param);
 
     status = ffm_save_model(model, opt.model_path.c_str());
 
@@ -220,43 +215,6 @@ int train(Option opt) {
   return status;
 }
 
-int train_on_disk(Option opt) {
-  if (opt.param.random) {
-    cout << "Random update is not allowed in disk-level training. Please use "
-            "`--no-rand' to disable."
-         << endl;
-    return 1;
-  }
-
-  if (opt.do_cv) {
-    cout << "Cross-validation is not yet implemented in disk-level training."
-         << endl;
-    return 1;
-  }
-
-  string tr_bin_path = basename(opt.tr_path) + ".bin";
-  string va_bin_path =
-      opt.va_path.empty() ? "" : basename(opt.va_path) + ".bin";
-
-  ffm_read_problem_to_disk(opt.tr_path.c_str(), tr_bin_path.c_str());
-  if (!opt.va_path.empty())
-    ffm_read_problem_to_disk(opt.va_path.c_str(), va_bin_path.c_str());
-
-  ffm_model *model = ffm_train_with_validation_on_disk(
-      tr_bin_path.c_str(), va_bin_path.c_str(), opt.param);
-
-  ffm_int status = ffm_save_model(model, opt.model_path.c_str());
-  if (status != 0) {
-    ffm_destroy_model(&model);
-
-    return 1;
-  }
-
-  ffm_destroy_model(&model);
-
-  return 0;
-}
-
 int main(int argc, char **argv) {
   Option opt;
   try {
@@ -266,9 +224,5 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (opt.on_disk) {
-    return train_on_disk(opt);
-  } else {
-    return train(opt);
-  }
+  return train(opt);
 }

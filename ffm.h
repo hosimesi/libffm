@@ -28,8 +28,8 @@ struct ffm_problem {
 };
 
 struct ffm_importance_weights {
-    ffm_int l;
-    ffm_float *W;
+  ffm_int l;
+  ffm_float *W;
 };
 
 struct ffm_model {
@@ -56,8 +56,6 @@ ffm_problem *ffm_read_problem(char const *path);
 
 ffm_importance_weights *ffm_read_importance_weights(char const *path);
 
-int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path);
-
 void ffm_destroy_problem(struct ffm_problem **prob);
 
 ffm_int ffm_save_model(ffm_model *model, char const *path);
@@ -73,15 +71,8 @@ ffm_parameter ffm_get_default_param();
 
 ffm_model *ffm_train_with_validation(struct ffm_problem *Tr,
                                      struct ffm_problem *Va,
+                                     struct ffm_importance_weights *iws,
                                      struct ffm_parameter param);
-
-ffm_model *ffm_train(struct ffm_problem *prob, struct ffm_parameter param);
-
-ffm_model *ffm_train_with_validation_on_disk(char const *Tr_path,
-                                             char const *Va_path,
-                                             struct ffm_parameter param);
-
-ffm_model *ffm_train_on_disk(char const *path, struct ffm_parameter param);
 
 ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
 
