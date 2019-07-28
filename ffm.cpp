@@ -41,6 +41,7 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
   __m128 XMMlambda = _mm_set1_ps(lambda);
 
   __m128 XMMt = _mm_setzero_ps();
+  __m128 XMMiw = _mm_set1_ps(iw);
 
   for (ffm_node *N1 = begin; N1 != end; N1++) {
     ffm_int j1 = N1->j;
@@ -73,10 +74,12 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
           __m128 XMMwg1 = _mm_load_ps(wg1 + d);
           __m128 XMMwg2 = _mm_load_ps(wg2 + d);
 
-          __m128 XMMg1 = _mm_add_ps(_mm_mul_ps(XMMlambda, XMMw1),
-                                    _mm_mul_ps(XMMkappav, XMMw2));
-          __m128 XMMg2 = _mm_add_ps(_mm_mul_ps(XMMlambda, XMMw2),
-                                    _mm_mul_ps(XMMkappav, XMMw1));
+          __m128 XMMg1 = _mm_mul_ps(_mm_add_ps(_mm_mul_ps(XMMlambda, XMMw1),
+                                               _mm_mul_ps(XMMkappav, XMMw2)),
+                                    XMMiw);
+          __m128 XMMg2 = _mm_mul_ps(_mm_add_ps(_mm_mul_ps(XMMlambda, XMMw2),
+                                               _mm_mul_ps(XMMkappav, XMMw1)),
+                                    XMMiw);
 
           XMMwg1 = _mm_add_ps(XMMwg1, _mm_mul_ps(XMMg1, XMMg1));
           XMMwg2 = _mm_add_ps(XMMwg2, _mm_mul_ps(XMMg2, XMMg2));
