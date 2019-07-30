@@ -31,10 +31,9 @@ ffm_int const kCHUNK_SIZE = 10000000;
 ffm_int const kMaxLineSize = 100000;
 
 inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
-                     ffm_model &model,
-                     ffm_float iw=1.0f,
-                     ffm_float kappa = 0, ffm_float eta = 0,
-                     ffm_float lambda = 0, bool do_update = false) {
+                     ffm_model &model, ffm_float iw = 1.0f, ffm_float kappa = 0,
+                     ffm_float eta = 0, ffm_float lambda = 0,
+                     bool do_update = false) {
   ffm_long align0 = (ffm_long)model.k * 2;
   ffm_long align1 = (ffm_long)model.m * align0;
 
@@ -199,8 +198,7 @@ vector<ffm_float> normalize(ffm_problem &prob) {
 }
 
 shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
-                            ffm_parameter param,
-                            ffm_problem *va = nullptr,
+                            ffm_parameter param, ffm_problem *va = nullptr,
                             ffm_importance_weights *iws = nullptr,
                             ffm_importance_weights *iwvs = nullptr) {
 #if defined USEOMP
@@ -330,14 +328,14 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
             if (loss_worse_counter <= 0) {
               memcpy(model->W, prev_W.data(), w_size * sizeof(ffm_float));
               cout << endl
-                   << "Auto-stop. Use model at " << best_iteration << "th iteration."
-                   << endl;
+                   << "Auto-stop. Use model at " << best_iteration
+                   << "th iteration." << endl;
               break;
             } else {
               memcpy(prev_W.data(), model->W, w_size * sizeof(ffm_float));
             }
           } else {
-            loss_worse_counter = param.auto_stop_threshold;  // reset the counter
+            loss_worse_counter = param.auto_stop_threshold; // reset the counter
             memcpy(prev_W.data(), model->W, w_size * sizeof(ffm_float));
             best_va_loss = va_loss;
             best_iteration = iter;
@@ -460,102 +458,6 @@ ffm_importance_weights *ffm_read_importance_weights(char const *path) {
   }
   fclose(f);
   return weights;
-}
-
-int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path) {
-  FILE *f_txt = fopen(txt_path, "r");
-  if (f_txt == nullptr)
-    return 1;
-
-  FILE *f_bin = fopen(bin_path, "wb");
-  if (f_bin == nullptr)
-    return 1;
-
-  vector<char> line(kMaxLineSize);
-
-  ffm_int m = 0;
-  ffm_int n = 0;
-  ffm_int max_l = 0;
-  ffm_long max_nnz = 0;
-  ffm_long p = 0;
-
-  vector<ffm_float> Y;
-  vector<ffm_float> R;
-  vector<ffm_long> P(1, 0);
-  vector<ffm_node> X;
-
-  auto write_chunk = [&]() {
-    ffm_int l = Y.size();
-    ffm_long nnz = P[l];
-
-    max_l = max(max_l, l);
-    max_nnz = max(max_nnz, nnz);
-
-    fwrite(&l, sizeof(ffm_int), 1, f_bin);
-    fwrite(Y.data(), sizeof(ffm_float), l, f_bin);
-    fwrite(R.data(), sizeof(ffm_float), l, f_bin);
-    fwrite(P.data(), sizeof(ffm_long), l + 1, f_bin);
-    fwrite(X.data(), sizeof(ffm_node), nnz, f_bin);
-
-    Y.clear();
-    R.clear();
-    P.assign(1, 0);
-    X.clear();
-    p = 0;
-  };
-
-  fwrite(&m, sizeof(ffm_int), 1, f_bin);
-  fwrite(&n, sizeof(ffm_int), 1, f_bin);
-  fwrite(&max_l, sizeof(ffm_int), 1, f_bin);
-  fwrite(&max_nnz, sizeof(ffm_long), 1, f_bin);
-
-  while (fgets(line.data(), kMaxLineSize, f_txt)) {
-    char *y_char = strtok(line.data(), " \t");
-
-    ffm_float y = (atoi(y_char) > 0) ? 1.0f : -1.0f;
-
-    ffm_float scale = 0;
-    for (;; p++) {
-      char *field_char = strtok(nullptr, ":");
-      char *idx_char = strtok(nullptr, ":");
-      char *value_char = strtok(nullptr, " \t");
-      if (field_char == nullptr || *field_char == '\n')
-        break;
-
-      ffm_node N;
-      N.f = atoi(field_char);
-      N.j = atoi(idx_char);
-      N.v = atof(value_char);
-
-      X.push_back(N);
-
-      m = max(m, N.f + 1);
-      n = max(n, N.j + 1);
-
-      scale += N.v * N.v;
-    }
-    scale = 1 / scale;
-
-    Y.push_back(y);
-    R.push_back(scale);
-    P.push_back(p);
-
-    if (X.size() > (size_t)kCHUNK_SIZE)
-      write_chunk();
-  }
-  write_chunk();
-  write_chunk();
-
-  rewind(f_bin);
-  fwrite(&m, sizeof(ffm_int), 1, f_bin);
-  fwrite(&n, sizeof(ffm_int), 1, f_bin);
-  fwrite(&max_l, sizeof(ffm_int), 1, f_bin);
-  fwrite(&max_nnz, sizeof(ffm_long), 1, f_bin);
-
-  fclose(f_bin);
-  fclose(f_txt);
-
-  return 0;
 }
 
 void ffm_destroy_problem(ffm_problem **prob) {

@@ -13,29 +13,30 @@ using namespace std;
 using namespace ffm;
 
 string train_help() {
-  return string("usage: ffm-train [options] training_set_file [model_file]\n"
-                "\n"
-                "options:\n"
-                "-l <lambda>: set regularization parameter (default 0.00002)\n"
-                "-k <factor>: set number of latent factors (default 4)\n"
-                "-t <iteration>: set number of iterations (default 15)\n"
-                "-r <eta>: set learning rate (default 0.2)\n"
-                "-s <nr_threads>: set number of threads (default 1)\n"
-                "-p <path>: set path to the validation set\n"
-                "-f <path>: set path for production model file\n"
-                "-m <prefix>: set key prefix for production model\n"
-                "-W <path>: set path of importance weights file for training set\n"
-                "-WV <path>: set path of importance weights file for validation set\n"
-                "-v <fold>: set the number of folds for cross-validation\n"
-                "--quiet: quiet model (no output)\n"
-                "--no-norm: disable instance-wise normalization\n"
-                "--no-rand: disable random update\n"
-                "<training_set_file>.bin will be generated)\n"
-                "--auto-stop: stop at the iteration that achieves the best "
-                "validation loss (must be used with -p)\n"
-                "--auto-stop-threshold: set the threshold count for stop at the iteration"
-                " that achieves the best validation loss (must be used with --auto-stop)\n"
-                );
+  return string(
+      "usage: ffm-train [options] training_set_file [model_file]\n"
+      "\n"
+      "options:\n"
+      "-l <lambda>: set regularization parameter (default 0.00002)\n"
+      "-k <factor>: set number of latent factors (default 4)\n"
+      "-t <iteration>: set number of iterations (default 15)\n"
+      "-r <eta>: set learning rate (default 0.2)\n"
+      "-s <nr_threads>: set number of threads (default 1)\n"
+      "-p <path>: set path to the validation set\n"
+      "-f <path>: set path for production model file\n"
+      "-m <prefix>: set key prefix for production model\n"
+      "-W <path>: set path of importance weights file for training set\n"
+      "-WV <path>: set path of importance weights file for validation set\n"
+      "-v <fold>: set the number of folds for cross-validation\n"
+      "--quiet: quiet model (no output)\n"
+      "--no-norm: disable instance-wise normalization\n"
+      "--no-rand: disable random update\n"
+      "<training_set_file>.bin will be generated)\n"
+      "--auto-stop: stop at the iteration that achieves the best "
+      "validation loss (must be used with -p)\n"
+      "--auto-stop-threshold: set the threshold count for stop at the iteration"
+      " that achieves the best validation loss (must be used with "
+      "--auto-stop)\n");
 }
 
 struct Option {
@@ -210,7 +211,9 @@ int train(Option opt) {
   ffm_importance_weights *iwv = nullptr;
   if (!opt.iwpath_validation.empty()) {
     if (va == nullptr) {
-      cerr << "please set validation file if you set validation weights file" << endl << flush;
+      cerr << "please set validation file if you set validation weights file"
+           << endl
+           << flush;
       return 1;
     }
 
@@ -221,7 +224,9 @@ int train(Option opt) {
     }
 
     if (iwv->l != va->l) {
-      cerr << "The length of validation and validation's weights should be equal:" << endl;
+      cerr << "The length of validation and validation's weights should be "
+              "equal:"
+           << endl;
       cerr << "validation file:" << va->l << endl;
       cerr << "validation's weights file:" << iwv->l << endl << flush;
       return 1;
