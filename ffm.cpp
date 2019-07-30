@@ -292,6 +292,7 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 #endif
         for (ffm_int i = 0; i < va->l; i++) {
           ffm_float y = va->Y[i];
+          ffm_float iwv = iwvs->W[i];
 
           ffm_node *begin = &va->X[va->P[i]];
 
@@ -303,9 +304,9 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
           ffm_float expnyt = exp(-y * t);
 
-          va_loss += log(1 + expnyt);
+          va_loss += log(1 + expnyt) * iwv;
         }
-        va_loss /= va->l;
+        va_loss /= iwvs->sum;
 
         cout.width(13);
         cout << fixed << setprecision(5) << va_loss;
@@ -414,6 +415,7 @@ ffm_importance_weights *ffm_read_importance_weights(char const *path) {
 
   ffm_importance_weights *weights = new ffm_importance_weights;
   weights->l = 0;
+  weights->sum = 0;
   weights->W = nullptr;
 
   char line[kMaxLineSize];
@@ -433,6 +435,7 @@ ffm_importance_weights *ffm_read_importance_weights(char const *path) {
 
   for (ffm_int i = 0; fgets(line, kMaxLineSize, f) != nullptr; i++) {
     ffm_float iw = (ffm_float)atof(line);
+    weights->sum += iw;
     weights->W[i] = iw;
   }
   fclose(f);

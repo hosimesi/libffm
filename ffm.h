@@ -29,6 +29,7 @@ struct ffm_problem {
 
 struct ffm_importance_weights {
   ffm_int l;
+  ffm_float sum;
   ffm_float *W;
 };
 
