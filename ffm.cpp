@@ -259,7 +259,10 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
       ffm_int i = order[ii];
 
       ffm_float y = tr->Y[i];
-      ffm_float iw = iws->W[i];
+      ffm_float iw = 1.0;
+      if (iws != nullptr) {
+          iw = iws->W[i];
+      }
 
       ffm_node *begin = &tr->X[tr->P[i]];
 
