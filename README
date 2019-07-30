@@ -78,14 +78,18 @@ stop at the iteration that reaches the best validation loss:
 
 Specifying the importance weights
 =================================
+
 Usage:
 
-    use '-W weight_file' to assign importance weights for each training data.
+    Use '-W weight_file' to assign importance weights for each training data.
+    Use '-WV weight_file' to assign importance weights for each validation data.
     Please make sure all importance weights are non-negative.
 
 Example:
 
     $ ./ffm-train -p va.ffm -W weights.txt -l 0.00002 tr.ffm
+    $ ./ffm-train -p va.ffm -W weights.txt -WV va_weights.txt -l 0.00002 tr.ffm
+
 
 Installation
 ============

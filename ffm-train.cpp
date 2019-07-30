@@ -24,7 +24,8 @@ string train_help() {
                 "-p <path>: set path to the validation set\n"
                 "-f <path>: set path for production model file\n"
                 "-m <prefix>: set key prefix for production model\n"
-                "-W <path>: set path for importance weights file\n"
+                "-W <path>: set path of importance weights file for training set\n"
+                "-WV <path>: set path of importance weights file for validation set\n"
                 "-v <fold>: set the number of folds for cross-validation\n"
                 "--quiet: quiet model (no output)\n"
                 "--no-norm: disable instance-wise normalization\n"
@@ -37,7 +38,7 @@ string train_help() {
 struct Option {
   Option() : param(ffm_get_default_param()), nr_folds(1), do_cv(false) {}
   string tr_path, va_path, model_path, production_model_path, key_prefix;
-  string importance_weights_path;
+  string iwpath_training, iwpath_validation;
   ffm_parameter param;
   ffm_int nr_folds;
   bool do_cv;
@@ -129,7 +130,12 @@ Option parse_option(int argc, char **argv) {
       if (i == argc - 1)
         throw invalid_argument("need to specify weights file path after -W");
       i++;
-      opt.importance_weights_path = args[i];
+      opt.iwpath_training = args[i];
+    } else if (args[i].compare("-WV") == 0) {
+      if (i == argc - 1)
+        throw invalid_argument("need to specify weights file path after -W");
+      i++;
+      opt.iwpath_validation = args[i];
     } else if (args[i].compare("--no-norm") == 0) {
       opt.param.normalization = false;
     } else if (args[i].compare("--quiet") == 0) {
@@ -168,10 +174,10 @@ int train(Option opt) {
   }
 
   ffm_importance_weights *iw = nullptr;
-  if (!opt.importance_weights_path.empty()) {
-    iw = ffm_read_importance_weights(opt.importance_weights_path.c_str());
+  if (!opt.iwpath_training.empty()) {
+    iw = ffm_read_importance_weights(opt.iwpath_training.c_str());
     if (iw == nullptr) {
-      cerr << "cannot load " << opt.importance_weights_path << endl << flush;
+      cerr << "cannot load " << opt.iwpath_training << endl << flush;
       return 1;
     }
 
@@ -193,16 +199,37 @@ int train(Option opt) {
     }
   }
 
+  ffm_importance_weights *iwv = nullptr;
+  if (!opt.iwpath_validation.empty()) {
+    if (va == nullptr) {
+      cerr << "please set validation file if you set validation weights file" << endl << flush;
+      return 1;
+    }
+
+    iwv = ffm_read_importance_weights(opt.iwpath_validation.c_str());
+    if (iwv == nullptr) {
+      cerr << "cannot load " << opt.iwpath_validation << endl << flush;
+      return 1;
+    }
+
+    if (iwv->l != va->l) {
+      cerr << "The length of validation and validation's weights should be equal:" << endl;
+      cerr << "validation file:" << va->l << endl;
+      cerr << "validation's weights file:" << iwv->l << endl << flush;
+      return 1;
+    }
+  }
+
   int status = 0;
   if (opt.do_cv) {
     ffm_cross_validation(tr, opt.nr_folds, opt.param);
   } else {
-    ffm_model *model = ffm_train_with_validation(tr, va, iw, opt.param);
+    ffm_model *model = ffm_train_with_validation(tr, va, iw, iwv, opt.param);
 
     status = ffm_save_model(model, opt.model_path.c_str());
 
     // Production model
-    if (opt.production_model_path.c_str() != NULL)
+    if (opt.production_model_path.c_str() != nullptr)
       status = ffm_save_production_model(
           model, opt.production_model_path.c_str(), opt.key_prefix.c_str());
 

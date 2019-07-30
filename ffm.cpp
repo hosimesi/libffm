@@ -201,7 +201,8 @@ vector<ffm_float> normalize(ffm_problem &prob) {
 shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
                             ffm_parameter param,
                             ffm_problem *va = nullptr,
-                            ffm_importance_weights *iws = nullptr) {
+                            ffm_importance_weights *iws = nullptr,
+                            ffm_importance_weights *iwvs = nullptr) {
 #if defined USEOMP
   ffm_int old_nr_threads = omp_get_num_threads();
   omp_set_num_threads(param.nr_threads);
@@ -291,6 +292,13 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 #endif
         for (ffm_int i = 0; i < va->l; i++) {
           ffm_float y = va->Y[i];
+          ffm_float iwv;
+
+          if (iwvs == nullptr) {
+            iwv = 1;
+          } else {
+            iwv = iwvs->W[i];
+          }
 
           ffm_node *begin = &va->X[va->P[i]];
 
@@ -302,9 +310,14 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
           ffm_float expnyt = exp(-y * t);
 
-          va_loss += log(1 + expnyt);
+          va_loss += log(1 + expnyt) * iwv;
         }
-        va_loss /= va->l;
+
+        if (iwvs == nullptr) {
+          va_loss /= va->l;
+        } else {
+          va_loss /= iwvs->sum;
+        }
 
         cout.width(13);
         cout << fixed << setprecision(5) << va_loss;
@@ -413,6 +426,7 @@ ffm_importance_weights *ffm_read_importance_weights(char const *path) {
 
   ffm_importance_weights *weights = new ffm_importance_weights;
   weights->l = 0;
+  weights->sum = 0;
   weights->W = nullptr;
 
   char line[kMaxLineSize];
@@ -432,6 +446,7 @@ ffm_importance_weights *ffm_read_importance_weights(char const *path) {
 
   for (ffm_int i = 0; fgets(line, kMaxLineSize, f) != nullptr; i++) {
     ffm_float iw = (ffm_float)atof(line);
+    weights->sum += iw;
     weights->W[i] = iw;
   }
   fclose(f);
@@ -662,12 +677,13 @@ ffm_parameter ffm_get_default_param() {
 
 ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
                                      ffm_importance_weights *iws,
+                                     ffm_importance_weights *iwvs,
                                      ffm_parameter param) {
   vector<ffm_int> order(tr->l);
   for (ffm_int i = 0; i < tr->l; i++)
     order[i] = i;
 
-  shared_ptr<ffm_model> model = train(tr, order, param, va, iws);
+  shared_ptr<ffm_model> model = train(tr, order, param, va, iws, iwvs);
 
   ffm_model *model_ret = new ffm_model;
 
