@@ -139,12 +139,17 @@ Command Line Usage
     -r <eta>: set learning rate (default 0.2)
     -s <nr_threads>: set number of threads (default 1)
     -p <path>: set path to the validation set
+    -f <path>: set path for production model file
+    -m <prefix>: set key prefix for production model
+    -W <path>: set path of importance weights file for training set
+    -WV <path>: set path of importance weights file for validation set
     -v <fold>: set the number of folds for cross-validation
     --quiet: quiet model (no output)
     --no-norm: disable instance-wise normalization
     --no-rand: disable random update
-    --on-disk: perform on-disk training (a temporary file <training_set_file>.bin will be generated)
+    <training_set_file>.bin will be generated)
     --auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)
+    --auto-stop-threshold: set the threshold count for stop at the iteration that achieves the best validation loss (must be used with --auto-stop)
 
     By default we do instance-wise normalization. That is, we normalize the 2-norm of each instance to 1. You can use
     `--no-norm' to disable this function.

@@ -47,6 +47,7 @@ struct ffm_parameter {
   ffm_int nr_iters;
   ffm_int k;
   ffm_int nr_threads;
+  ffm_int auto_stop_threshold;
   bool quiet;
   bool normalization;
   bool random;

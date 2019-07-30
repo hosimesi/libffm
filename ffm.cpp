@@ -231,6 +231,8 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
   if (auto_stop)
     prev_W.assign(w_size, 0);
   ffm_double best_va_loss = numeric_limits<ffm_double>::max();
+  ffm_int best_iteration = 0;
+  ffm_int loss_worse_counter = param.auto_stop_threshold;
 
   if (!param.quiet) {
     if (param.auto_stop && (va == nullptr || va->l == 0))
@@ -324,14 +326,21 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
         if (auto_stop) {
           if (va_loss > best_va_loss) {
-            memcpy(model->W, prev_W.data(), w_size * sizeof(ffm_float));
-            cout << endl
-                 << "Auto-stop. Use model at " << iter - 1 << "th iteration."
-                 << endl;
-            break;
+            loss_worse_counter--;
+            if (loss_worse_counter <= 0) {
+              memcpy(model->W, prev_W.data(), w_size * sizeof(ffm_float));
+              cout << endl
+                   << "Auto-stop. Use model at " << best_iteration << "th iteration."
+                   << endl;
+              break;
+            } else {
+              memcpy(prev_W.data(), model->W, w_size * sizeof(ffm_float));
+            }
           } else {
+            loss_worse_counter = param.auto_stop_threshold;  // reset the counter
             memcpy(prev_W.data(), model->W, w_size * sizeof(ffm_float));
             best_va_loss = va_loss;
+            best_iteration = iter;
           }
         }
       }
