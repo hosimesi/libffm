@@ -27,7 +27,6 @@ using namespace std;
 
 ffm_int const kALIGNByte = 16;
 ffm_int const kALIGN = kALIGNByte / sizeof(ffm_float);
-ffm_int const kCHUNK_SIZE = 10000000;
 ffm_int const kMaxLineSize = 100000;
 
 inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
