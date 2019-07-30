@@ -72,6 +72,7 @@ ffm_parameter ffm_get_default_param();
 ffm_model *ffm_train_with_validation(struct ffm_problem *Tr,
                                      struct ffm_problem *Va,
                                      struct ffm_importance_weights *iws,
+                                     struct ffm_importance_weights *iwvs,
                                      struct ffm_parameter param);
 
 ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);

@@ -201,7 +201,8 @@ vector<ffm_float> normalize(ffm_problem &prob) {
 shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
                             ffm_parameter param,
                             ffm_problem *va = nullptr,
-                            ffm_importance_weights *iws = nullptr) {
+                            ffm_importance_weights *iws = nullptr,
+                            ffm_importance_weights *iwvs = nullptr) {
 #if defined USEOMP
   ffm_int old_nr_threads = omp_get_num_threads();
   omp_set_num_threads(param.nr_threads);
@@ -662,12 +663,13 @@ ffm_parameter ffm_get_default_param() {
 
 ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
                                      ffm_importance_weights *iws,
+                                     ffm_importance_weights *iwvs,
                                      ffm_parameter param) {
   vector<ffm_int> order(tr->l);
   for (ffm_int i = 0; i < tr->l; i++)
     order[i] = i;
 
-  shared_ptr<ffm_model> model = train(tr, order, param, va, iws);
+  shared_ptr<ffm_model> model = train(tr, order, param, va, iws, iwvs);
 
   ffm_model *model_ret = new ffm_model;
 
