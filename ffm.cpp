@@ -292,7 +292,13 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 #endif
         for (ffm_int i = 0; i < va->l; i++) {
           ffm_float y = va->Y[i];
-          ffm_float iwv = iwvs->W[i];
+          ffm_float iwv;
+
+          if (iwvs == nullptr) {
+            iwv = 1;
+          } else {
+            iwv = iwvs->W[i];
+          }
 
           ffm_node *begin = &va->X[va->P[i]];
 
@@ -306,7 +312,12 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
           va_loss += log(1 + expnyt) * iwv;
         }
-        va_loss /= iwvs->sum;
+
+        if (iwvs == nullptr) {
+          va_loss /= va->l;
+        } else {
+          va_loss /= iwvs->sum;
+        }
 
         cout.width(13);
         cout << fixed << setprecision(5) << va_loss;
