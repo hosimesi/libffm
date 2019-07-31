@@ -32,6 +32,7 @@ string train_help() {
       "--no-norm: disable instance-wise normalization\n"
       "--no-rand: disable random update\n"
       "<training_set_file>.bin will be generated)\n"
+      "--json-meta: generate a meta file if sets json file path.\n"
       "--auto-stop: stop at the iteration that achieves the best "
       "validation loss (must be used with -p)\n"
       "--auto-stop-threshold: set the threshold count for stop at the iteration"
@@ -148,6 +149,13 @@ Option parse_option(int argc, char **argv) {
       opt.param.random = false;
     } else if (args[i].compare("--auto-stop") == 0) {
       opt.param.auto_stop = true;
+    } else if (args[i].compare("--json-meta") == 0) {
+      if (i == argc - 1)
+        throw invalid_argument("need to specify weights file path after -W");
+      i++;
+      char *json_meta_path = new char[args[i].length() + 1];
+      strcpy(json_meta_path, args[i].c_str());
+      opt.param.json_meta_path = json_meta_path;
     } else if (args[i].compare("--auto-stop-threshold") == 0) {
       if (i == argc - 1)
         throw invalid_argument("need to specify weights file path after -W");

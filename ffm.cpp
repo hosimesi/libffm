@@ -348,6 +348,15 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
     }
   }
 
+  // generate json meta file.
+  if (param.json_meta_path != nullptr) {
+    ofstream f_out(param.json_meta_path);
+    if (f_out.is_open()) {
+      f_out << "{\"best_iteration\": " << best_iteration << "}\n" << flush;
+      f_out.close();
+    }
+  }
+
   shrink_model(*model, param.k);
 
 #if defined USEOMP
@@ -580,10 +589,12 @@ ffm_parameter ffm_get_default_param() {
   param.nr_iters = 15;
   param.k = 4;
   param.nr_threads = 1;
+  param.auto_stop_threshold = -1;
   param.quiet = false;
   param.normalization = true;
   param.random = true;
   param.auto_stop = false;
+  param.json_meta_path = nullptr;
 
   return param;
 }
