@@ -146,8 +146,8 @@ Command Line Usage
     -v <fold>: set the number of folds for cross-validation
     --quiet: quiet model (no output)
     --no-norm: disable instance-wise normalization
-    --no-rand: disable random update
-    <training_set_file>.bin will be generated)
+    --no-rand: disable random update <training_set_file>.bin will be generated)
+    --json-meta: generate a meta file if sets json file path.
     --auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)
     --auto-stop-threshold: set the threshold count for stop at the iteration that achieves the best validation loss (must be used with --auto-stop)
 

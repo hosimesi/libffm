@@ -48,6 +48,7 @@ struct ffm_parameter {
   ffm_int k;
   ffm_int nr_threads;
   ffm_int auto_stop_threshold;
+  char *json_meta_path;
   bool quiet;
   bool normalization;
   bool random;
