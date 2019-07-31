@@ -30,7 +30,7 @@ string train_help() {
       "-v <fold>: set the number of folds for cross-validation\n"
       "--quiet: quiet model (no output)\n"
       "--no-norm: disable instance-wise normalization\n"
-      "--no-rand: disable random update\n"
+      "--no-rand: disable random update "
       "<training_set_file>.bin will be generated)\n"
       "--json-meta: generate a meta file if sets json file path.\n"
       "--auto-stop: stop at the iteration that achieves the best "
