@@ -250,7 +250,7 @@ int train(Option opt) {
     status = ffm_save_model(model, opt.model_path.c_str());
 
     // Production model
-    if (opt.production_model_path.c_str() != nullptr)
+    if (!opt.production_model_path.empty())
       status = ffm_save_production_model(
           model, opt.production_model_path.c_str(), opt.key_prefix.c_str());
 
