@@ -27,7 +27,6 @@ string train_help() {
       "-m <prefix>: set key prefix for production model\n"
       "-W <path>: set path of importance weights file for training set\n"
       "-WV <path>: set path of importance weights file for validation set\n"
-      "-v <fold>: set the number of folds for cross-validation\n"
       "--quiet: quiet model (no output)\n"
       "--no-norm: disable instance-wise normalization\n"
       "--no-rand: disable random update "
@@ -41,12 +40,10 @@ string train_help() {
 }
 
 struct Option {
-  Option() : param(ffm_get_default_param()), nr_folds(1), do_cv(false) {}
+  Option() : param(ffm_get_default_param()) {}
   string tr_path, va_path, model_path, production_model_path, key_prefix;
   string iwpath_training, iwpath_validation;
   ffm_parameter param;
-  ffm_int nr_folds;
-  bool do_cv;
 };
 
 string basename(string path) {
@@ -107,14 +104,6 @@ Option parse_option(int argc, char **argv) {
       opt.param.nr_threads = atoi(args[i].c_str());
       if (opt.param.nr_threads <= 0)
         throw invalid_argument("number of threads should be greater than zero");
-    } else if (args[i].compare("-v") == 0) {
-      if (i == argc - 1)
-        throw invalid_argument("need to specify number of folds after -v");
-      i++;
-      opt.nr_folds = atoi(args[i].c_str());
-      if (opt.nr_folds <= 1)
-        throw invalid_argument("number of folds should be greater than one");
-      opt.do_cv = true;
     } else if (args[i].compare("-p") == 0) {
       if (i == argc - 1)
         throw invalid_argument("need to specify path after -p");
@@ -242,20 +231,16 @@ int train(Option opt) {
   }
 
   int status = 0;
-  if (opt.do_cv) {
-    ffm_cross_validation(tr, opt.nr_folds, opt.param);
-  } else {
-    ffm_model *model = ffm_train_with_validation(tr, va, iw, iwv, opt.param);
+  ffm_model *model = ffm_train_with_validation(tr, va, iw, iwv, opt.param);
 
-    status = ffm_save_model(model, opt.model_path.c_str());
+  status = ffm_save_model(model, opt.model_path.c_str());
 
-    // Production model
-    if (!opt.production_model_path.empty())
+  // Production model
+  if (!opt.production_model_path.empty())
       status = ffm_save_production_model(
-          model, opt.production_model_path.c_str(), opt.key_prefix.c_str());
+              model, opt.production_model_path.c_str(), opt.key_prefix.c_str());
 
-    ffm_destroy_model(&model);
-  }
+  ffm_destroy_model(&model);
 
   ffm_destroy_problem(&tr);
   ffm_destroy_problem(&va);

@@ -143,7 +143,6 @@ Command Line Usage
     -m <prefix>: set key prefix for production model
     -W <path>: set path of importance weights file for training set
     -WV <path>: set path of importance weights file for validation set
-    -v <fold>: set the number of folds for cross-validation
     --quiet: quiet model (no output)
     --no-norm: disable instance-wise normalization
     --no-rand: disable random update <training_set_file>.bin will be generated)
@@ -156,16 +155,6 @@ Command Line Usage
     
     By default, our algorithm randomly select an instance for update in each inner iteration. On some datasets you may
     want to do update in the original order. You can do it by using `--no-rand' together with `-s 1.'
-
-    If you do not have enough memory, then you can use `--on-disk' to do disk-level training. Two restrictions when you
-    use this mode:
-        
-        1. So far we do not allow random update in the mode, so please use
-           `--no-rand' if you want to do on-disk training. 
-           
-        2. Cross-validation in this mode is not yet supported.
-
-    A binary file `training_set_file.bin' will be generated to store the data in binary format.
 
     Because FFM usually need early stopping for better test performance, we provide an option `--auto-stop' to stop at
     the iteration that achieves the best validation loss. Note that you need to provide a validation set with `-p' when
@@ -199,10 +188,6 @@ train a model using the following parameters:
 
 use bigdata.te.txt as validation set
 
-> ffm-train -v 5 bigdata.tr.txt
-
-do five fold cross validation
-
 > ffm-train --quiet bigdata.tr.txt
 
 do not print message to screen
@@ -210,10 +195,6 @@ do not print message to screen
 > ffm-predict bigdata.te.txt model output
 
 do prediction
-
-> ffm-train --no-rand --on-disk bigdata.tr.txt
-
-perform on-disk training
 
 > ffm-train -p bigdata.te.txt -t 100 --auto-stop bigdata.tr.txt
 
@@ -319,10 +300,6 @@ Functions available in LIBFFM include:
     Train a model with training set `Tr' and validation set `Va.' The logloss of the validation set is printed at each
     iteration.
     
--   ffm_float ffm_cross_validation(struct ffm_problem const *prob, ffm_int nr_folds, ffm_parameter param);
-
-    Do cross validation with `nr_folds' folds.
-
 -   ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
 
     Do prediction. `begin' and `end' are pointers to specify the beginning and ending position of the instance to be
