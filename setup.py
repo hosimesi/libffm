@@ -1,0 +1,50 @@
+import os
+import numpy
+from setuptools import setup, Extension, find_packages
+
+try:
+    from Cython.Build import cythonize
+    ext = ".pyx"
+except ImportError:
+    cythonize = None
+    ext = ".cpp"
+
+ext_modules = [
+    Extension(
+        "ffm.libffm",
+        extra_compile_args=[
+            "-Wall", "-O3",
+            "-std=c++0x", "-march=native",
+            "-DUSESSE"
+        ],
+        sources=[os.path.join("ffm", "libffm" + ext), 'ffm.cpp'],
+        include_dirs=['.', numpy.get_include()],
+        language='c++'
+    )
+]
+
+if cythonize is not None:
+    ext_modules = cythonize(ext_modules)
+
+setup(
+    name='ffm',
+    version='0.0.1',
+    description="LibFFM Python Package",
+    long_description="LibFFM Python Package",
+    install_requires=['numpy'],
+    ext_modules=ext_modules,
+    maintainer='',
+    maintainer_email='',
+    zip_safe=False,
+    packages=find_packages(),
+    entry_points={
+        "console_scripts": [
+            "pyffm-train = ffm.cli:ffm_train",
+        ],
+    },
+    include_package_data=True,
+    data_files=[("", ["ffm.cpp", "ffm.h", "COPYRIGHT"])],
+    package_data={
+        "ffm": ["*.cpp", "*.h"]
+    },
+)

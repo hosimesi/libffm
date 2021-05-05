@@ -39,6 +39,9 @@ struct ffm_model {
   ffm_int k;
   ffm_float *W;
   bool normalization;
+  // Note that best_iteration is '-1' when
+  // restored from model's binary format.
+  ffm_int best_iteration;
 };
 
 struct ffm_parameter {
