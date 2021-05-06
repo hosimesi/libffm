@@ -142,6 +142,7 @@ ffm_model *init_model(ffm_int n, ffm_int m, ffm_parameter param) {
   model->m = m;
   model->W = nullptr;
   model->normalization = param.normalization;
+  model->best_iteration = -1;
 
   try {
     model->W = malloc_aligned_float((ffm_long)n * m * k_aligned * 2);
@@ -349,6 +350,7 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
     }
   }
 
+  model->best_iteration = best_iteration;
   // generate json meta file.
   if (param.json_meta_path != nullptr) {
     ofstream f_out(param.json_meta_path);
@@ -546,6 +548,7 @@ ffm_model *ffm_load_model(char const *path) {
   string dummy;
 
   ffm_model *model = new ffm_model;
+  model->best_iteration = -1;
   model->W = nullptr;
 
   f_in >> dummy >> model->n >> dummy >> model->m >> dummy >> model->k >>
@@ -616,6 +619,7 @@ ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
   model_ret->m = model->m;
   model_ret->k = model->k;
   model_ret->normalization = model->normalization;
+  model_ret->best_iteration = model->best_iteration;
 
   model_ret->W = model->W;
   model->W = nullptr;

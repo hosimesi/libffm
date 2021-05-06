@@ -3,9 +3,16 @@
 *.model
 *.dSYM/
 
+venv/
+dist/
+*.egg-info/
+*.so
+ffm/*.cpp
+
 ffm-predict
 ffm-train
 
 build/
 data/
 model/
+*.json
