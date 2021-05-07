@@ -36,15 +36,15 @@ setup(
     maintainer='',
     maintainer_email='',
     zip_safe=False,
-    packages=find_packages(),
+    packages=find_packages(exclude=('tests', 'tests.*')),
     entry_points={
         "console_scripts": [
             "pyffm-train = ffm.cli:ffm_train",
         ],
     },
-    include_package_data=True,
+    include_package_data=False,
     data_files=[("", ["ffm.cpp", "ffm.h", "COPYRIGHT"])],
     package_data={
-        "ffm": ["*.cpp", "*.h"]
+        "ffm": ["*.cpp", "*.h", "*.pyx", "*.pxd"]
     },
 )

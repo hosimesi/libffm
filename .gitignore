@@ -5,6 +5,7 @@
 
 venv/
 dist/
+wheelhouse/
 *.egg-info/
 *.so
 ffm/*.cpp
