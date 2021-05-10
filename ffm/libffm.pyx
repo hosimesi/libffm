@@ -1,5 +1,6 @@
 # cython: language_level=3
-from libc.stdlib cimport malloc, free
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from libc.stdlib cimport free
 cimport numpy as cnp
 
 cnp.import_array()
@@ -63,16 +64,16 @@ cdef ffm_problem* make_ffm_prob(X, y):
         ffm_long nnz = sum(len(x) for x in X)
         ffm_long p = 0
 
-    cdef ffm_problem* prob = <ffm_problem *> malloc(sizeof(ffm_problem))
+    cdef ffm_problem* prob = <ffm_problem *> PyMem_Malloc(sizeof(ffm_problem))
     if prob is NULL:
         raise MemoryError("Insufficient memory for prob")
-    cdef ffm_node* nodes = <ffm_node *> malloc(nnz * sizeof(ffm_node))
+    cdef ffm_node* nodes = <ffm_node *> PyMem_Malloc(nnz * sizeof(ffm_node))
     if nodes is NULL:
         raise MemoryError("Insufficient memory for data")
-    cdef ffm_long* position = <ffm_long *> malloc((l+1) * sizeof(ffm_long))
+    cdef ffm_long* position = <ffm_long *> PyMem_Malloc((l+1) * sizeof(ffm_long))
     if position is NULL:
         raise MemoryError("Insufficient memory for positions")
-    cdef ffm_float* labels = <ffm_float *> malloc(l * sizeof(ffm_float))
+    cdef ffm_float* labels = <ffm_float *> PyMem_Malloc(l * sizeof(ffm_float))
     if labels is NULL:
         raise MemoryError("Insufficient memory for labels")
 
@@ -102,18 +103,18 @@ cdef void free_ffm_prob(ffm_problem* prob):
     if prob is NULL:
         return
     if prob.X is not NULL:
-        free(prob.X)
+        PyMem_Free(prob.X)
     if prob.Y is not NULL:
-        free(prob.Y)
+        PyMem_Free(prob.Y)
     if prob.P is not NULL:
-        free(prob.P)
-    free(prob)
+        PyMem_Free(prob.P)
+    PyMem_Free(prob)
 
 
 cdef ffm_importance_weights* make_ffm_iw(weights):
     cdef:
-        ffm_float* W = <ffm_float *> malloc(len(weights) * sizeof(ffm_float))
-        ffm_importance_weights* iw = <ffm_importance_weights *> malloc(sizeof(ffm_importance_weights))
+        ffm_float* W = <ffm_float *> PyMem_Malloc(len(weights) * sizeof(ffm_float))
+        ffm_importance_weights* iw = <ffm_importance_weights *> PyMem_Malloc(sizeof(ffm_importance_weights))
 
     iw.sum = sum(weights)
     iw.l = len(weights)
@@ -127,8 +128,8 @@ cdef void free_ffm_iw(ffm_importance_weights* iw):
     if iw is NULL:
         return
     if iw.W is not NULL:
-        free(iw.W)
-    free(iw)
+        PyMem_Free(iw.W)
+    PyMem_Free(iw)
 
 
 cdef class _weights_finalizer:
