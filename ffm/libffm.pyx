@@ -6,7 +6,7 @@ cimport numpy as cnp
 cnp.import_array()
 
 
-cdef extern from "ffm.h" namespace "ffm":
+cdef extern from "ffm.h" namespace "ffm" nogil:
     ctypedef float ffm_float
     ctypedef double ffm_double
     ctypedef int ffm_int
