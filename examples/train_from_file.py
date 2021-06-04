@@ -20,7 +20,7 @@ def main():
     print("Best iteration:", model.best_iteration)
 
     with open("./model/prod-cvr.model", 'w') as f:
-        model.dump_model(f, key_prefix="key")
+        model.dump_model(f)
 
 
 if __name__ == '__main__':
