@@ -110,7 +110,9 @@ def train(
         normalization=normalization,
         random=random,
     )
-    return Model(weights=weights, best_iteration=best_iteration, normalization=normalization)
+    return Model(
+        weights=weights, best_iteration=best_iteration, normalization=normalization
+    )
 
 
 def read_importance_weights(fp: IO) -> List[float]:

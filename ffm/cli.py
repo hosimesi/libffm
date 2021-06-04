@@ -7,7 +7,13 @@ from ffm import Dataset, train
 def ffm_train() -> None:
     parser = argparse.ArgumentParser(description="LibFFM CLI")
     parser.add_argument("tr_path", help="File path to training set", type=str)
-    parser.add_argument("model_path", help="File path to training set", nargs='?', type=str, default=None)
+    parser.add_argument(
+        "model_path",
+        help="File path to training set",
+        nargs="?",
+        type=str,
+        default=None,
+    )
     parser.add_argument(
         "-p", help="Set path to the validation set", type=str, default=""
     )
