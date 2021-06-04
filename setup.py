@@ -28,7 +28,7 @@ if cythonize is not None:
 
 setup(
     name='ffm',
-    version='0.0.1',
+    version='0.1.0',
     description="LibFFM Python Package",
     long_description="LibFFM Python Package",
     install_requires=['numpy'],
