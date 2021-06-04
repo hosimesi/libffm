@@ -36,17 +36,26 @@ class Dataset:
 
 
 class Model:
-    def __init__(self, weights: np.ndarray, best_iteration: int):
-        self._weights = weights
-        self._best_iteration = best_iteration
+    def __init__(self, weights: np.ndarray, best_iteration: int, normalization: bool):
+        self.weights = weights
+        self.best_iteration = best_iteration
+        self.normalization = normalization
 
-    @property
-    def weights(self):
-        return self._weights
+    def dump_model(self, fp: IO) -> None:
+        """Dump FFM model to file-like object."""
+        assert len(self.weights.shape) == 3
+        float_fmt = "{:.6g}"  # This is the same format with ffm-train command.
 
-    @property
-    def best_iteration(self):
-        return self._best_iteration
+        fp.write(f"n {self.weights.shape[0]}\n")
+        fp.write(f"m {self.weights.shape[1]}\n")
+        fp.write(f"k {self.weights.shape[2]}\n")
+        fp.write(f"normalization {int(self.normalization)}\n")
+
+        for i in range(self.weights.shape[0]):
+            for j in range(self.weights.shape[1]):
+                w = " ".join([float_fmt.format(v) for v in self.weights[i, j]])
+                # Put space before break line to keep LIBFFM's output compatibility.
+                fp.write(f"w{i},{j} {w} \n")
 
     def dump_libffm_weights(self, fp: IO, key_prefix: str = "") -> None:
         """Dump weights of FFM model like ffm-train's "-m" option"""
@@ -85,7 +94,7 @@ def train(
         va = (valid_data.data, valid_data.labels)
         iwv = valid_data.importance_weights
 
-    weights, best_iteration = libffm_train(
+    weights, best_iteration, normalization = libffm_train(
         tr,
         va=va,
         iw=iw,
@@ -101,7 +110,7 @@ def train(
         normalization=normalization,
         random=random,
     )
-    return Model(weights=weights, best_iteration=best_iteration)
+    return Model(weights=weights, best_iteration=best_iteration, normalization=normalization)
 
 
 def read_importance_weights(fp: IO) -> List[float]:

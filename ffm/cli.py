@@ -7,6 +7,7 @@ from ffm import Dataset, train
 def ffm_train() -> None:
     parser = argparse.ArgumentParser(description="LibFFM CLI")
     parser.add_argument("tr_path", help="File path to training set", type=str)
+    parser.add_argument("model_path", help="File path to training set", nargs='?', type=str, default=None)
     parser.add_argument(
         "-p", help="Set path to the validation set", type=str, default=""
     )
@@ -71,6 +72,10 @@ def ffm_train() -> None:
     if args.f:
         with open(args.f, "w") as f:
             model.dump_libffm_weights(f, key_prefix=args.m)
+
+    if args.model_path:
+        with open(args.model_path, "w") as f:
+            model.dump_model(f)
 
     if args.json_meta:
         with open(args.json_meta, "w") as f:
