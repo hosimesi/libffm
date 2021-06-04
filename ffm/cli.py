@@ -9,7 +9,7 @@ def ffm_train() -> None:
     parser.add_argument("tr_path", help="File path to training set", type=str)
     parser.add_argument(
         "model_path",
-        help="File path to training set",
+        help="File path to dump LIBFFM model",
         nargs="?",
         type=str,
         default=None,
