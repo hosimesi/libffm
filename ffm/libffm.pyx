@@ -152,6 +152,7 @@ cdef object _train(
         raise MemoryError("Invalid model pointer")
 
     best_iteration = model_ptr.best_iteration
+    normalization = True if model_ptr.normalization else False
 
     cdef:
         cnp.npy_intp shape[3]
@@ -165,7 +166,7 @@ cdef object _train(
     f._data = <void*> model_ptr.W
     cnp.set_array_base(arr, f)
     free(model_ptr)
-    return arr, best_iteration
+    return arr, best_iteration, normalization
 
 
 def train(
@@ -218,10 +219,10 @@ def train(
         iwv_ptr = NULL
 
     try:
-        weights, best_iteration = _train(tr_ptr, va_ptr, iw_ptr, iwv_ptr, param)
+        weights, best_iteration, normalization = _train(tr_ptr, va_ptr, iw_ptr, iwv_ptr, param)
     finally:
         free_ffm_prob(tr_ptr)
         free_ffm_prob(va_ptr)
         free_ffm_iw(iw_ptr)
         free_ffm_iw(iwv_ptr)
-    return weights, best_iteration
+    return weights, best_iteration, normalization

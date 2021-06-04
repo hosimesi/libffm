@@ -19,9 +19,8 @@ def main():
     )
     print("Best iteration:", model.best_iteration)
 
-    # Dump FFM weights in ffm-train's "-m" option format.
     with open("./model/prod-cvr.model", 'w') as f:
-        model.dump_libffm_weights(f, key_prefix="key")
+        model.dump_model(f)
 
 
 if __name__ == '__main__':
