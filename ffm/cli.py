@@ -108,7 +108,7 @@ def ffm_predict() -> None:
             y = 1.0 if float(label) > 0 else -1.0
             pred_y = model.predict(x)
             loss -= math.log(pred_y) if y == 1 else math.log(1 - pred_y)
-            f.write(f"{int(y)},{pred_y}\n")
+            f.write(f"{int(y)},{'{:.6g}'.format(pred_y)}\n")
 
         loss /= len(test_data.labels)
         print(f"logloss = {loss}")
