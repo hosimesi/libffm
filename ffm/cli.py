@@ -1,11 +1,12 @@
 import argparse
 import json
+import math
 
-from ffm import Dataset, train
+from ffm import Dataset, train, Model
 
 
 def ffm_train() -> None:
-    parser = argparse.ArgumentParser(description="LibFFM CLI")
+    parser = argparse.ArgumentParser(description="LibFFM CLI for train")
     parser.add_argument("tr_path", help="File path to training set", type=str)
     parser.add_argument(
         "model_path",
@@ -88,5 +89,26 @@ def ffm_train() -> None:
             json.dump({"best_iteration": model.best_iteration}, f)
 
 
-if __name__ == "__main__":
-    ffm_train()
+def ffm_predict() -> None:
+    parser = argparse.ArgumentParser(description="LibFFM CLI for predict")
+    parser.add_argument("test_path", help="File path to test set", type=str)
+    parser.add_argument("model_path", help="File path to a trained FFM model", type=str)
+    parser.add_argument(
+        "output_path", help="File path for prediction results", type=str
+    )
+    parser.add_argument("--quiet", "-q", help="quiet", action="store_true")
+    args = parser.parse_args()
+
+    test_data = Dataset.read_ffm_data(args.test_path)
+    model = Model.read_ffm_model(args.model_path)
+
+    loss = 0.0
+    with open(args.output_path, "w") as f:
+        for x, label in zip(test_data.data, test_data.labels):
+            y = 1.0 if float(label) > 0 else -1.0
+            pred_y = model.predict(x)
+            loss -= math.log(pred_y) if y == 1 else math.log(1 - pred_y)
+            f.write(f"{int(y)},{'{:.6g}'.format(pred_y)}\n")
+
+        loss /= len(test_data.labels)
+        print(f"logloss = {loss}")

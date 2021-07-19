@@ -40,6 +40,7 @@ setup(
     entry_points={
         "console_scripts": [
             "pyffm-train = ffm.cli:ffm_train",
+            "pyffm-predict = ffm.cli:ffm_predict",
         ],
     },
     include_package_data=False,
