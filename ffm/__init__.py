@@ -2,6 +2,7 @@ import warnings
 import numpy as np
 from typing import Optional, Sequence, List, Tuple, IO
 from ffm.libffm import train as libffm_train
+from ffm.libffm import predict as ffm_predict
 
 __all__ = ["Dataset", "Model", "train"]
 
@@ -58,6 +59,11 @@ class Model:
                 # Put space before break line to keep LIBFFM's output compatibility.
                 fp.write(f"w{i},{j} {w} \n")
 
+    def predict(
+        self, data: Sequence[Tuple[int, int, float]]
+    ) -> float:
+        return ffm_predict(self.weights, data, self.normalization)
+
     def dump_libffm_weights(self, fp: IO, key_prefix: str = "") -> None:
         """Dump weights of FFM model like ffm-train's "-m" option"""
         warnings.warn(
@@ -76,6 +82,11 @@ class Model:
             key = f"{key_prefix}_{i}" if key_prefix else str(i)
             value_json = '{"key":"%s","value":{%s}}' % (key, ",".join(items))
             fp.write(value_json + "\n")
+
+    @classmethod
+    def read_ffm_model(cls, model_path: str) -> "Model":
+        with open(model_path) as f:
+            return read_ffm_model(f)
 
 
 def train(

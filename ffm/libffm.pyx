@@ -1,6 +1,7 @@
 # cython: language_level=3
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.stdlib cimport free
+import math
 cimport numpy as cnp
 
 cnp.import_array()
@@ -226,3 +227,41 @@ def train(
         free_ffm_iw(iw_ptr)
         free_ffm_iw(iwv_ptr)
     return weights, best_iteration, normalization
+
+
+def predict(float[:,:,:] weights, x, normalization):
+    cdef:
+        float r, t = 0, v, v1, v2
+        float[:, :] w1, w2
+        int n, m, k, j1, j2, f1, f2
+
+    if not normalization:
+        r = 1
+    else:
+        r = 0
+        for node in x:
+            r += node[2] * node[2]
+        r = 1 / r
+
+    n = weights.shape[0]
+    m = weights.shape[1]
+    k = weights.shape[2]
+    for node1 in x:
+        f1 = node1[0]
+        j1 = node1[1]
+        v1 = node1[2]
+        if j1 >= n or f1 >= m:
+            continue
+
+        assert len(x) > 2, "it must contain two or more ffm_nodes"
+        for node2 in x[1:]:
+            f2 = node2[0]
+            j2 = node2[1]
+            v2 = node2[2]
+            if j2 >= n or f2 >= m:
+                continue
+
+            v = v1 * v2 * r
+            for d in range(k):
+                t += weights[j1, f2, d] * weights[j2, f1, d] * v
+    return 1 / (1 + math.exp(-t))
