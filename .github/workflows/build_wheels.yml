@@ -1,6 +1,9 @@
-name: Build wheel packages
+name: Build wheel and sdist packages
 
-on: [push, pull_request]
+on:
+  release:
+    types:
+      - published
 
 jobs:
   build_wheels:
@@ -8,7 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        # skip windows-2019,
+        os: [ubuntu-20.04, macos-10.15]
 
     steps:
       - uses: actions/checkout@v2
@@ -19,9 +23,12 @@ jobs:
           CIBW_SKIP: cp36-* cp310-* pp*
           CIBW_BEFORE_BUILD: pip install numpy Cython==3.0a9
 
-      - uses: actions/upload-artifact@v2
-        with:
-          path: ./wheelhouse/*.whl
+      - name: Upload wheel packages to a GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export TAG_NAME=$(jq --raw-output .tag_name "$GITHUB_EVENT_PATH")
+          gh release upload $TAG_NAME ./wheelhouse/*.whl
 
   build_sdist:
     name: Build source distribution
@@ -40,6 +47,9 @@ jobs:
       - name: Build sdist
         run: python setup.py sdist
 
-      - uses: actions/upload-artifact@v2
-        with:
-          path: dist/*.tar.gz
+      - name: Upload a sdist package to a GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export TAG_NAME=$(jq --raw-output .tag_name "$GITHUB_EVENT_PATH")
+          gh release upload $TAG_NAME ./dist/*.tar.gz
