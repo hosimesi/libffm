@@ -95,7 +95,7 @@ Installation
 ============
 
 Requirement: LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is not available on your
-platform, please refer to section `OpenMP.' 
+platform, please refer to section `OpenMP.'
 
 - Unix-like systems:
   To compile on Unix-like systems, type `make' in the command line.
@@ -152,7 +152,7 @@ Command Line Usage
 
     By default we do instance-wise normalization. That is, we normalize the 2-norm of each instance to 1. You can use
     `--no-norm' to disable this function.
-    
+
     By default, our algorithm randomly select an instance for update in each inner iteration. On some datasets you may
     want to do update in the original order. You can do it by using `--no-rand' together with `-s 1.'
 
@@ -252,6 +252,7 @@ There are four public data structures in LIBFFM.
     nr_iters         number of iterations                     15
     k                number of latent factors                  4
     nr_threads       number of threads used                    1
+    nds_rate         negative down sampling                  1.0
     quiet            no outputs to stdout                  false
     normalization    instance-wise normalization           false
     random           randomly select instance in SG         true
@@ -280,7 +281,7 @@ Functions available in LIBFFM include:
     Get default parameters.
 
 -   ffm_int ffm_save_model(struct ffm_model const *model, char const *path);
-    
+
     Save a model. It returns 0 on sucess and 1 on failure.
 
 -   struct ffm_model* ffm_load_model(char const *path);
@@ -288,7 +289,7 @@ Functions available in LIBFFM include:
     Load a model. If the model could not be loaded, a nullptr is returned.
 
 -   void ffm_destroy_model(struct ffm_model **model);
-    
+
     Destroy a model.
 
 -   struct ffm_model* ffm_train(struct ffm_problem const *prob, ffm_parameter param);
@@ -299,7 +300,7 @@ Functions available in LIBFFM include:
 
     Train a model with training set `Tr' and validation set `Va.' The logloss of the validation set is printed at each
     iteration.
-    
+
 -   ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
 
     Do prediction. `begin' and `end' are pointers to specify the beginning and ending position of the instance to be
@@ -359,6 +360,6 @@ Contributors
 
 Yu-Chin Juan, Wei-Sheng Chin, and Yong Zhuang
 
-For questions, comments, feature requests, or bug report, please send your email to 
+For questions, comments, feature requests, or bug report, please send your email to
 
     Yu-Chin (guestwalk@gmail.com)

@@ -84,10 +84,14 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
 
           XMMw1 = _mm_sub_ps(
               XMMw1,
-              _mm_mul_ps(XMMeta, _mm_mul_ps(XMMiw, _mm_mul_ps(_mm_rsqrt_ps(XMMwg1), XMMg1))));
+              _mm_mul_ps(
+                  XMMeta,
+                  _mm_mul_ps(XMMiw, _mm_mul_ps(_mm_rsqrt_ps(XMMwg1), XMMg1))));
           XMMw2 = _mm_sub_ps(
               XMMw2,
-              _mm_mul_ps(XMMeta, _mm_mul_ps(XMMiw, _mm_mul_ps(_mm_rsqrt_ps(XMMwg2), XMMg2))));
+              _mm_mul_ps(
+                  XMMeta,
+                  _mm_mul_ps(XMMiw, _mm_mul_ps(_mm_rsqrt_ps(XMMwg2), XMMg2))));
 
           _mm_store_ps(w1 + d, XMMw1);
           _mm_store_ps(w2 + d, XMMw2);
@@ -131,6 +135,10 @@ ffm_float *malloc_aligned_float(ffm_long size) {
 #endif
 
   return (ffm_float *)ptr;
+}
+
+ffm_double calibrate(ffm_double x, ffm_float nds_rate) {
+  return x / (x + (1.0 - x) / nds_rate);
 }
 
 ffm_model *init_model(ffm_int n, ffm_int m, ffm_parameter param) {
@@ -310,13 +318,13 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
           ffm_float r = R_va[i];
 
-          ffm_float t = wTx(begin, end, r, *model);
+          // NOTE オーバーフローしない適切な方法を考える
+          ffm_float t = calibrate(wTx(begin, end, r, *model), param.nds_rate) / w_size;
 
           ffm_float expnyt = exp(-y * t);
-
           va_loss += log(1 + expnyt) * iwv;
-        }
 
+        }
         if (iwvs == nullptr) {
           va_loss /= va->l;
         } else {
@@ -599,6 +607,7 @@ ffm_parameter ffm_get_default_param() {
   param.random = true;
   param.auto_stop = false;
   param.json_meta_path = nullptr;
+  param.nds_rate = 1.0;
 
   return param;
 }

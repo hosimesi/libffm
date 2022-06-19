@@ -51,6 +51,7 @@ struct ffm_parameter {
   ffm_int k;
   ffm_int nr_threads;
   ffm_int auto_stop_threshold;
+  ffm_float nds_rate;
   char *json_meta_path;
   bool quiet;
   bool normalization;
@@ -82,6 +83,7 @@ ffm_model *ffm_train_with_validation(struct ffm_problem *Tr,
                                      struct ffm_parameter param);
 
 ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
+ffm_float calibrate(ffm_float &x, ffm_float &nds_rate);
 
 #ifdef __cplusplus
 } // namespace ffm
