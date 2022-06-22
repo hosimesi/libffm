@@ -104,6 +104,12 @@ def ffm_predict() -> None:
         "output_path", help="File path for prediction results", type=str
     )
     parser.add_argument("--quiet", "-q", help="quiet", action="store_true")
+    parser.add_argument(
+        "--nds-rate",
+        help="Set the training data's negative down sampling rate (must be used with --auto-stop)",
+        type=int,
+        default=1.0,
+    )
     args = parser.parse_args()
 
     test_data = Dataset.read_ffm_data(args.test_path)
@@ -113,7 +119,7 @@ def ffm_predict() -> None:
     with open(args.output_path, "w") as f:
         for x, label in zip(test_data.data, test_data.labels):
             y = 1.0 if float(label) > 0 else -1.0
-            pred_y = model.predict(x)
+            pred_y = model.predict(x, args.nds_rate)
             loss -= math.log(pred_y) if y == 1 else math.log(1 - pred_y)
             f.write(f"{int(y)},{'{:.6g}'.format(pred_y)}\n")
 

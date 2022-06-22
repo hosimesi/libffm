@@ -231,12 +231,12 @@ def train(
         free_ffm_iw(iwv_ptr)
     return weights, best_iteration, normalization
 
-
-def predict(float[:,:,:] weights, x, normalization):
+def predict(float[:,:,:] weights, x, normalization, nds_rate=1.0):
     cdef:
         float r, t = 0, v, v1, v2
         float[:, :] w1, w2
         int n, m, k, j1, j2, f1, f2, d
+        double prob
 
     assert len(x) > 2, "it must contain two or more ffm_nodes"
 
@@ -269,4 +269,5 @@ def predict(float[:,:,:] weights, x, normalization):
             v = v1 * v2 * r
             for d in range(k):
                 t += weights[j1, f2, d] * weights[j2, f1, d] * v
-    return 1 / (1 + math.exp(-t))
+    prob = 1 / (1 + math.exp(-t))
+    return prob / (prob + (1.0 - prob) / nds_rate);

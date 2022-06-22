@@ -1,8 +1,10 @@
 import warnings
+from typing import IO, List, Optional, Sequence, Tuple
+
 import numpy as np
-from typing import Optional, Sequence, List, Tuple, IO
-from ffm.libffm import train as libffm_train
+
 from ffm.libffm import predict as ffm_predict
+from ffm.libffm import train as libffm_train
 
 __all__ = ["Dataset", "Model", "train"]
 
@@ -60,9 +62,9 @@ class Model:
                 fp.write(f"w{i},{j} {w} \n")
 
     def predict(
-        self, data: Sequence[Tuple[int, int, float]]
+        self, data: Sequence[Tuple[int, int, float]], nds_rate: Optional[float] = 1.0
     ) -> float:
-        return ffm_predict(self.weights, data, self.normalization)
+        return ffm_predict(self.weights, data, self.normalization, nds_rate)
 
     def dump_libffm_weights(self, fp: IO, key_prefix: str = "") -> None:
         """Dump weights of FFM model like ffm-train's "-m" option"""
