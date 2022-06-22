@@ -318,11 +318,10 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
 
           ffm_float r = R_va[i];
 
-          // NOTE オーバーフローしない適切な方法を考える
-          ffm_float t = calibrate(wTx(begin, end, r, *model), param.nds_rate) / w_size;
-
-          ffm_float expnyt = exp(-y * t);
-          va_loss += log(1 + expnyt) * iwv;
+          ffm_float t = wTx(begin, end, r, *model);
+          ffm_float prob = 1 / (1 + exp(-t));
+          ffm_float calibrated_prob = calibrate(prob, param.nds_rate);
+          va_loss += -((1 + y) * log(calibrated_prob) + (1 - y) * log(1- calibrated_prob))* iwv;
 
         }
         if (iwvs == nullptr) {

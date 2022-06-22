@@ -27,7 +27,7 @@ string train_help() {
       "-m <prefix>: set key prefix for production model\n"
       "-W <path>: set path of importance weights file for training set\n"
       "-WV <path>: set path of importance weights file for validation set\n"
-      "-nds: set the negative down sampling rate for unbalanced data\n"
+      "-nds-rate: set the negative down sampling rate for unbalanced data\n"
       "--quiet: quiet model (no output)\n"
       "--no-norm: disable instance-wise normalization\n"
       "--no-rand: disable random update "

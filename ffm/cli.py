@@ -56,6 +56,12 @@ def ffm_train() -> None:
         type=int,
         default=-1,
     )
+    parser.add_argument(
+        "--nds-rate",
+        help="Set the training data's negative down sampling rate (must be used with --auto-stop)",
+        type=int,
+        default=1.0,
+    )
     parser.add_argument("--quiet", "-q", help="quiet", action="store_true")
     args = parser.parse_args()
 
@@ -74,6 +80,7 @@ def ffm_train() -> None:
         normalization=not args.no_norm,
         random=not args.no_rand,
         auto_stop=args.auto_stop,
+        nds_rate=args.nds_rate
     )
 
     if args.f:

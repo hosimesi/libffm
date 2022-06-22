@@ -44,6 +44,7 @@ cdef extern from "ffm.h" namespace "ffm" nogil:
         bint normalization
         bint random
         bint auto_stop
+        ffm_float nds_rate
 
     struct ffm_model:
         ffm_int n
@@ -185,6 +186,7 @@ def train(
     normalization=True,
     random=True,
     auto_stop=True,
+    nds_rate=1.0
 ):
     cdef ffm_parameter param
     param.eta = eta
@@ -198,6 +200,7 @@ def train(
     param.normalization = normalization
     param.random = random
     param.auto_stop = auto_stop
+    param.nds_rate = nds_rate
 
     cdef:
         ffm_problem* tr_ptr = make_ffm_prob(tr[0], tr[1])

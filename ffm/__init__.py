@@ -102,6 +102,7 @@ def train(
     quiet: bool = True,
     normalization: bool = True,
     random: bool = True,
+    nds_rate: float = 1.0,
 ) -> Model:
     tr = (train_data.data, train_data.labels)
     iw = train_data.importance_weights
@@ -120,6 +121,7 @@ def train(
         lambda_=lam,
         nr_iters=nr_iters,
         k=k,
+        nds_rate=nds_rate,
         nr_threads=nr_threads,
         auto_stop=auto_stop,
         auto_stop_threshold=auto_stop_threshold,
