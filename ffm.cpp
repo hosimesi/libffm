@@ -635,7 +635,7 @@ ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
   return model_ret;
 }
 
-ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model) {
+ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model, ffm_float nds_rate = 1.0) {
   ffm_float r = 1;
   if (model->normalization) {
     r = 0;
@@ -671,8 +671,8 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model) {
         t += w1[d] * w2[d] * v;
     }
   }
-
-  return 1 / (1 + exp(-t));
+  ffm_double prob = 1 / (1 + exp(-t));
+  return calibrate(prob, nds_rate);
 }
 
 } // namespace ffm
