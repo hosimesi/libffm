@@ -149,6 +149,7 @@ Command Line Usage
     --json-meta: generate a meta file if sets json file path.
     --auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)
     --auto-stop-threshold: set the threshold count for stop at the iteration that achieves the best validation loss (must be used with --auto-stop)
+    --nds-rate: set the negative down sampling rate for training dataset.
 
     By default we do instance-wise normalization. That is, we normalize the 2-norm of each instance to 1. You can use
     `--no-norm' to disable this function.
@@ -163,7 +164,10 @@ Command Line Usage
 
 -   `ffm-predict'
 
-    usage: ffm-predict test_file model_file output_file
+    usage: ffm-predict test_file model_file output_file [options]
+
+    options:
+    --nds-rate: set the negative down sampling rate for training dataset.
 
 
 
@@ -236,6 +240,7 @@ There are four public data structures in LIBFFM.
         ffm_int nr_iters;
         ffm_int k;
         ffm_int nr_threads;
+        ffm_float nds_rate
         bool quiet;
         bool normalization;
         bool random;
@@ -257,6 +262,7 @@ There are four public data structures in LIBFFM.
     normalization    instance-wise normalization           false
     random           randomly select instance in SG         true
     auto_stop        auto stop at the best iteration       false
+    nds_rate         negative down sampling rate             1.0
 
     To obtain a parameter object with default values, use the function
     `ffm_get_default_param.'
