@@ -40,10 +40,11 @@ class Dataset:
 
 
 class Model:
-    def __init__(self, weights: np.ndarray, best_iteration: int, normalization: bool):
+    def __init__(self, weights: np.ndarray, best_iteration: int, normalization: bool, best_va_loss: float):
         self.weights = weights
         self.best_iteration = best_iteration
         self.normalization = normalization
+        self.best_va_loss = best_va_loss
 
     def dump_model(self, fp: IO) -> None:
         """Dump FFM model to file-like object."""
@@ -114,7 +115,7 @@ def train(
         va = (valid_data.data, valid_data.labels)
         iwv = valid_data.importance_weights
 
-    weights, best_iteration, normalization = libffm_train(
+    weights, best_iteration, normalization, best_va_loss = libffm_train(
         tr,
         va=va,
         iw=iw,
@@ -132,7 +133,7 @@ def train(
         random=random,
     )
     return Model(
-        weights=weights, best_iteration=best_iteration, normalization=normalization
+        weights=weights, best_iteration=best_iteration, normalization=normalization, best_va_loss=best_va_loss
     )
 
 

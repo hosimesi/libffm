@@ -53,6 +53,7 @@ cdef extern from "ffm.h" namespace "ffm" nogil:
         ffm_float *W
         bint normalization
         ffm_int best_iteration
+        ffm_float best_va_loss
 
     ffm_model *ffm_train_with_validation(ffm_problem *Tr, ffm_problem *Va, ffm_importance_weights *iws, ffm_importance_weights *iwvs, ffm_parameter param);
 
@@ -154,6 +155,7 @@ cdef object _train(
         raise MemoryError("Invalid model pointer")
 
     best_iteration = model_ptr.best_iteration
+    best_va_loss = model_ptr.best_va_loss
     normalization = True if model_ptr.normalization else False
 
     cdef:
@@ -168,7 +170,7 @@ cdef object _train(
     f._data = <void*> model_ptr.W
     cnp.set_array_base(arr, f)
     free(model_ptr)
-    return arr, best_iteration, normalization
+    return arr, best_iteration, normalization, best_va_loss
 
 
 def train(
@@ -223,13 +225,13 @@ def train(
         iwv_ptr = NULL
 
     try:
-        weights, best_iteration, normalization = _train(tr_ptr, va_ptr, iw_ptr, iwv_ptr, param)
+        weights, best_iteration, normalization, best_va_loss = _train(tr_ptr, va_ptr, iw_ptr, iwv_ptr, param)
     finally:
         free_ffm_prob(tr_ptr)
         free_ffm_prob(va_ptr)
         free_ffm_iw(iw_ptr)
         free_ffm_iw(iwv_ptr)
-    return weights, best_iteration, normalization
+    return weights, best_iteration, normalization, best_va_loss
 
 def predict(float[:,:,:] weights, x, normalization, nds_rate=1.0):
     cdef:

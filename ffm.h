@@ -42,6 +42,7 @@ struct ffm_model {
   // Note that best_iteration is '-1' when
   // restored from model's binary format.
   ffm_int best_iteration;
+  ffm_float best_va_loss;
 };
 
 struct ffm_parameter {

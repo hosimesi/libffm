@@ -18,3 +18,4 @@ data/
 model/
 *.json
 .DS_Store
+*.python-version
