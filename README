@@ -257,7 +257,6 @@ There are four public data structures in LIBFFM.
     nr_iters         number of iterations                     15
     k                number of latent factors                  4
     nr_threads       number of threads used                    1
-    nds_rate         negative down sampling                  1.0
     quiet            no outputs to stdout                  false
     normalization    instance-wise normalization           false
     random           randomly select instance in SG         true
