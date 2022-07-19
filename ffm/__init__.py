@@ -1,8 +1,10 @@
 import warnings
+from typing import IO, List, Optional, Sequence, Tuple
+
 import numpy as np
-from typing import Optional, Sequence, List, Tuple, IO
-from ffm.libffm import train as libffm_train
+
 from ffm.libffm import predict as ffm_predict
+from ffm.libffm import train as libffm_train
 
 __all__ = ["Dataset", "Model", "train"]
 
@@ -38,10 +40,11 @@ class Dataset:
 
 
 class Model:
-    def __init__(self, weights: np.ndarray, best_iteration: int, normalization: bool):
+    def __init__(self, weights: np.ndarray, best_iteration: int, normalization: bool, best_va_loss: float):
         self.weights = weights
         self.best_iteration = best_iteration
         self.normalization = normalization
+        self.best_va_loss = best_va_loss
 
     def dump_model(self, fp: IO) -> None:
         """Dump FFM model to file-like object."""
@@ -60,9 +63,9 @@ class Model:
                 fp.write(f"w{i},{j} {w} \n")
 
     def predict(
-        self, data: Sequence[Tuple[int, int, float]]
+        self, data: Sequence[Tuple[int, int, float]], nds_rate: Optional[float] = 1.0
     ) -> float:
-        return ffm_predict(self.weights, data, self.normalization)
+        return ffm_predict(self.weights, data, self.normalization, nds_rate)
 
     def dump_libffm_weights(self, fp: IO, key_prefix: str = "") -> None:
         """Dump weights of FFM model like ffm-train's "-m" option"""
@@ -102,6 +105,7 @@ def train(
     quiet: bool = True,
     normalization: bool = True,
     random: bool = True,
+    nds_rate: float = 1.0,
 ) -> Model:
     tr = (train_data.data, train_data.labels)
     iw = train_data.importance_weights
@@ -111,7 +115,7 @@ def train(
         va = (valid_data.data, valid_data.labels)
         iwv = valid_data.importance_weights
 
-    weights, best_iteration, normalization = libffm_train(
+    weights, best_iteration, normalization, best_va_loss = libffm_train(
         tr,
         va=va,
         iw=iw,
@@ -120,6 +124,7 @@ def train(
         lambda_=lam,
         nr_iters=nr_iters,
         k=k,
+        nds_rate=nds_rate,
         nr_threads=nr_threads,
         auto_stop=auto_stop,
         auto_stop_threshold=auto_stop_threshold,
@@ -128,7 +133,7 @@ def train(
         random=random,
     )
     return Model(
-        weights=weights, best_iteration=best_iteration, normalization=normalization
+        weights=weights, best_iteration=best_iteration, normalization=normalization, best_va_loss=best_va_loss
     )
 
 

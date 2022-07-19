@@ -27,6 +27,7 @@ string train_help() {
       "-m <prefix>: set key prefix for production model\n"
       "-W <path>: set path of importance weights file for training set\n"
       "-WV <path>: set path of importance weights file for validation set\n"
+      "-nds-rate: set the negative down sampling rate for unbalanced data\n"
       "--quiet: quiet model (no output)\n"
       "--no-norm: disable instance-wise normalization\n"
       "--no-rand: disable random update "
@@ -140,16 +141,23 @@ Option parse_option(int argc, char **argv) {
       opt.param.auto_stop = true;
     } else if (args[i].compare("--json-meta") == 0) {
       if (i == argc - 1)
-        throw invalid_argument("need to specify weights file path after -W");
+        throw invalid_argument("need to specify json file path after --json-meta");
       i++;
       char *json_meta_path = new char[args[i].length() + 1];
       strcpy(json_meta_path, args[i].c_str());
       opt.param.json_meta_path = json_meta_path;
     } else if (args[i].compare("--auto-stop-threshold") == 0) {
       if (i == argc - 1)
-        throw invalid_argument("need to specify weights file path after -W");
+        throw invalid_argument("need to specify number for auto stop threshold after --auto-stop-threshold");
       i++;
       opt.param.auto_stop_threshold = atoi(args[i].c_str());
+    } else if (args[i].compare("--nds-rate") == 0) {
+      if (i == argc - 1)
+        throw invalid_argument("need to specify nds_rate after --nds-rate");
+      i++;
+      opt.param.nds_rate = atof(args[i].c_str());
+      if (opt.param.nds_rate <= 0)
+        throw invalid_argument("number of nds_rate should be greater than zero");
     } else {
       break;
     }
@@ -237,8 +245,8 @@ int train(Option opt) {
 
   // Production model
   if (!opt.production_model_path.empty())
-      status = ffm_save_production_model(
-              model, opt.production_model_path.c_str(), opt.key_prefix.c_str());
+    status = ffm_save_production_model(model, opt.production_model_path.c_str(),
+                                       opt.key_prefix.c_str());
 
   ffm_destroy_model(&model);
 

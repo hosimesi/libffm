@@ -95,7 +95,7 @@ Installation
 ============
 
 Requirement: LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is not available on your
-platform, please refer to section `OpenMP.' 
+platform, please refer to section `OpenMP.'
 
 - Unix-like systems:
   To compile on Unix-like systems, type `make' in the command line.
@@ -149,10 +149,11 @@ Command Line Usage
     --json-meta: generate a meta file if sets json file path.
     --auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)
     --auto-stop-threshold: set the threshold count for stop at the iteration that achieves the best validation loss (must be used with --auto-stop)
+    --nds-rate: set the negative down sampling rate for training dataset.
 
     By default we do instance-wise normalization. That is, we normalize the 2-norm of each instance to 1. You can use
     `--no-norm' to disable this function.
-    
+
     By default, our algorithm randomly select an instance for update in each inner iteration. On some datasets you may
     want to do update in the original order. You can do it by using `--no-rand' together with `-s 1.'
 
@@ -163,7 +164,10 @@ Command Line Usage
 
 -   `ffm-predict'
 
-    usage: ffm-predict test_file model_file output_file
+    usage: ffm-predict test_file model_file output_file [options]
+
+    options:
+    --nds-rate: set the negative down sampling rate for training dataset.
 
 
 
@@ -236,6 +240,7 @@ There are four public data structures in LIBFFM.
         ffm_int nr_iters;
         ffm_int k;
         ffm_int nr_threads;
+        ffm_float nds_rate
         bool quiet;
         bool normalization;
         bool random;
@@ -256,6 +261,7 @@ There are four public data structures in LIBFFM.
     normalization    instance-wise normalization           false
     random           randomly select instance in SG         true
     auto_stop        auto stop at the best iteration       false
+    nds_rate         negative down sampling rate             1.0
 
     To obtain a parameter object with default values, use the function
     `ffm_get_default_param.'
@@ -280,7 +286,7 @@ Functions available in LIBFFM include:
     Get default parameters.
 
 -   ffm_int ffm_save_model(struct ffm_model const *model, char const *path);
-    
+
     Save a model. It returns 0 on sucess and 1 on failure.
 
 -   struct ffm_model* ffm_load_model(char const *path);
@@ -288,7 +294,7 @@ Functions available in LIBFFM include:
     Load a model. If the model could not be loaded, a nullptr is returned.
 
 -   void ffm_destroy_model(struct ffm_model **model);
-    
+
     Destroy a model.
 
 -   struct ffm_model* ffm_train(struct ffm_problem const *prob, ffm_parameter param);
@@ -299,7 +305,7 @@ Functions available in LIBFFM include:
 
     Train a model with training set `Tr' and validation set `Va.' The logloss of the validation set is printed at each
     iteration.
-    
+
 -   ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
 
     Do prediction. `begin' and `end' are pointers to specify the beginning and ending position of the instance to be
@@ -359,6 +365,6 @@ Contributors
 
 Yu-Chin Juan, Wei-Sheng Chin, and Yong Zhuang
 
-For questions, comments, feature requests, or bug report, please send your email to 
+For questions, comments, feature requests, or bug report, please send your email to
 
     Yu-Chin (guestwalk@gmail.com)

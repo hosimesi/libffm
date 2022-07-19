@@ -44,6 +44,7 @@ cdef extern from "ffm.h" namespace "ffm" nogil:
         bint normalization
         bint random
         bint auto_stop
+        ffm_float nds_rate
 
     struct ffm_model:
         ffm_int n
@@ -52,6 +53,7 @@ cdef extern from "ffm.h" namespace "ffm" nogil:
         ffm_float *W
         bint normalization
         ffm_int best_iteration
+        ffm_float best_va_loss
 
     ffm_model *ffm_train_with_validation(ffm_problem *Tr, ffm_problem *Va, ffm_importance_weights *iws, ffm_importance_weights *iwvs, ffm_parameter param);
 
@@ -153,6 +155,7 @@ cdef object _train(
         raise MemoryError("Invalid model pointer")
 
     best_iteration = model_ptr.best_iteration
+    best_va_loss = model_ptr.best_va_loss
     normalization = True if model_ptr.normalization else False
 
     cdef:
@@ -167,7 +170,7 @@ cdef object _train(
     f._data = <void*> model_ptr.W
     cnp.set_array_base(arr, f)
     free(model_ptr)
-    return arr, best_iteration, normalization
+    return arr, best_iteration, normalization, best_va_loss
 
 
 def train(
@@ -185,6 +188,7 @@ def train(
     normalization=True,
     random=True,
     auto_stop=True,
+    nds_rate=1.0
 ):
     cdef ffm_parameter param
     param.eta = eta
@@ -198,6 +202,7 @@ def train(
     param.normalization = normalization
     param.random = random
     param.auto_stop = auto_stop
+    param.nds_rate = nds_rate
 
     cdef:
         ffm_problem* tr_ptr = make_ffm_prob(tr[0], tr[1])
@@ -220,20 +225,20 @@ def train(
         iwv_ptr = NULL
 
     try:
-        weights, best_iteration, normalization = _train(tr_ptr, va_ptr, iw_ptr, iwv_ptr, param)
+        weights, best_iteration, normalization, best_va_loss = _train(tr_ptr, va_ptr, iw_ptr, iwv_ptr, param)
     finally:
         free_ffm_prob(tr_ptr)
         free_ffm_prob(va_ptr)
         free_ffm_iw(iw_ptr)
         free_ffm_iw(iwv_ptr)
-    return weights, best_iteration, normalization
+    return weights, best_iteration, normalization, best_va_loss
 
-
-def predict(float[:,:,:] weights, x, normalization):
+def predict(float[:,:,:] weights, x, normalization, nds_rate=1.0):
     cdef:
         float r, t = 0, v, v1, v2
         float[:, :] w1, w2
         int n, m, k, j1, j2, f1, f2, d
+        double prob
 
     assert len(x) > 2, "it must contain two or more ffm_nodes"
 
@@ -266,4 +271,5 @@ def predict(float[:,:,:] weights, x, normalization):
             v = v1 * v2 * r
             for d in range(k):
                 t += weights[j1, f2, d] * weights[j2, f1, d] * v
-    return 1 / (1 + math.exp(-t))
+    prob = 1 / (1 + math.exp(-t))
+    return prob / (prob + (1.0 - prob) / nds_rate);

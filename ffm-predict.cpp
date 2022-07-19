@@ -16,10 +16,16 @@ using namespace ffm;
 
 struct Option {
   string test_path, model_path, output_path;
+  ffm_float nds_rate;
 };
 
 string predict_help() {
-  return string("usage: ffm-predict test_file model_file output_file\n");
+  return string(
+    "usage: ffm-predict [options] test_file model_file output_file\n"
+    "\n"
+    "options:\n"
+    "-nds-rate: set the negative down sampling rate for unbalanced data\n"
+  );
 }
 
 Option parse_option(int argc, char **argv) {
@@ -32,17 +38,28 @@ Option parse_option(int argc, char **argv) {
 
   Option option;
 
-  if (argc != 4)
+  if (argc < 4 || argc > 6)
     throw invalid_argument("cannot parse argument");
 
   option.test_path = string(args[1]);
   option.model_path = string(args[2]);
   option.output_path = string(args[3]);
+  ffm_int i = 1;
+  for (; i < argc; i++) {
+      if (args[i].compare("--nds-rate") == 0) {
+        if (i == argc - 1)
+          throw invalid_argument("need to specify nds_rate after --nds-rate");
+        i++;
+        option.nds_rate = atof(args[i].c_str());
+        if (option.nds_rate <= 0)
+          throw invalid_argument("number of nds_rate should be greater than zero");
+    }
+  }
 
   return option;
 }
 
-void predict(string test_path, string model_path, string output_path) {
+void predict(string test_path, string model_path, string output_path, ffm_float nds_rate = 1.0) {
   int const kMaxLineSize = 1000000;
 
   FILE *f_in = fopen(test_path.c_str(), "r");
@@ -75,7 +92,7 @@ void predict(string test_path, string model_path, string output_path) {
       x.push_back(N);
     }
 
-    ffm_float y_bar = ffm_predict(x.data(), x.data() + x.size(), model);
+    ffm_float y_bar = ffm_predict(x.data(), x.data() + x.size(), model, nds_rate);
 
     loss -= y == 1 ? log(y_bar) : log(1 - y_bar);
 
@@ -98,5 +115,5 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  predict(option.test_path, option.model_path, option.output_path);
+  predict(option.test_path, option.model_path, option.output_path, option.nds_rate);
 }
