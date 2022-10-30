@@ -55,10 +55,10 @@ cdef extern from "ffm.h" namespace "ffm" nogil:
         ffm_int best_iteration
         ffm_float best_va_loss
 
-    ffm_model *ffm_train_with_validation(ffm_problem *Tr, ffm_problem *Va, ffm_importance_weights *iws, ffm_importance_weights *iwvs, ffm_parameter param);
+    ffm_model *ffm_train_with_validation(ffm_problem *Tr, ffm_problem *Va, ffm_importance_weights *iws, ffm_importance_weights *iwvs, ffm_parameter param) except +;
 
 
-cdef ffm_problem* make_ffm_prob(X, y):
+cdef ffm_problem* make_ffm_prob(X, y) except +:
     if len(X) != len(y):
         raise ValueError("X and y should contain the same length items")
 

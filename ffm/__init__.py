@@ -26,17 +26,20 @@ class Dataset:
 
     @classmethod
     def read_ffm_data(cls, data_path: str, weights_path: str = "") -> "Dataset":
-        with open(data_path) as f:
-            data, labels = read_ffm_data(f)
+        try:
+            with open(data_path) as f:
+                data, labels = read_ffm_data(f)
 
-        weights: Optional[List[float]] = None
-        if weights_path:
-            with open(weights_path) as f:
-                weights = read_importance_weights(f)
-            assert len(labels) == len(
-                weights
-            ), "data and weights must be the same length"
-        return cls(data=data, labels=labels, importance_weights=weights)
+            weights: Optional[List[float]] = None
+            if weights_path:
+                with open(weights_path) as f:
+                    weights = read_importance_weights(f)
+                assert len(labels) == len(
+                    weights
+                ), "data and weights must be the same length"
+            return cls(data=data, labels=labels, importance_weights=weights)
+        except MemoryError:
+            raise Exception
 
 
 class Model:
@@ -132,6 +135,7 @@ def train(
         normalization=normalization,
         random=random,
     )
+
     return Model(
         weights=weights, best_iteration=best_iteration, normalization=normalization, best_va_loss=best_va_loss
     )

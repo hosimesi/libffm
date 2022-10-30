@@ -145,6 +145,10 @@ ffm_model *init_model(ffm_int n, ffm_int m, ffm_parameter param) {
   ffm_int k_aligned = (ffm_int)ceil((ffm_double)param.k / kALIGN) * kALIGN;
 
   ffm_model *model = new ffm_model;
+  if (model == nullptr) {
+    return nullptr;
+  }
+
   model->n = n;
   model->k = k_aligned;
   model->m = m;
@@ -220,6 +224,9 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
       shared_ptr<ffm_model>(init_model(tr->n, tr->m, param),
                             [](ffm_model *ptr) { ffm_destroy_model(&ptr); });
 
+  if (model == nullptr) {
+    return nullptr;
+  }
   vector<ffm_float> R_tr, R_va;
   if (param.normalization) {
     R_tr = normalize(*tr);
@@ -623,8 +630,14 @@ ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
     order[i] = i;
 
   shared_ptr<ffm_model> model = train(tr, order, param, va, iws, iwvs);
+  if (model == nullptr) {
+    return nullptr;
+  }
 
   ffm_model *model_ret = new ffm_model;
+  if (model_ret == nullptr) {
+    return nullptr;
+  }
 
   model_ret->n = model->n;
   model_ret->m = model->m;
