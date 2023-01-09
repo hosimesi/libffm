@@ -1,6 +1,5 @@
 CXX = g++
-# CXXFLAGS = -Wall -O3 -std=c++0x -march=native
-CXXFLAGS = -Wall -O3 -std=c++0x -mcpu=apple-m1
+CXXFLAGS = -Wall -O3 -std=c++0x -march=native
 
 ifneq ($(USESSE), OFF)
 	DFLAG += -DUSESSE

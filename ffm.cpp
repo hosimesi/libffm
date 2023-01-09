@@ -7,7 +7,6 @@
 #include <iostream>
 #include <memory>
 #include <new>
-#include <pmmintrin.h>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -18,6 +17,12 @@
 #endif
 
 #include "ffm.h"
+
+#ifdef _M_ARM64
+#include <arm_neon.h>
+#else
+#include <pmmintrin.h>
+#endif
 
 namespace ffm {
 
@@ -36,6 +41,90 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
   ffm_long align0 = (ffm_long)model.k * 2;
   ffm_long align1 = (ffm_long)model.m * align0;
 
+#ifdef _M_ARM64
+  float32x4_t XMMkappa = vdupq_n_f32(kappa);
+  float32x4_t XMMeta = vdupq_n_f32(eta);
+  float32x4_t XMMlambda = vdupq_n_f32(lambda);
+
+  float32x4_t XMMt = vdupq_n_f32(0.0f);
+  float32x4_t XMMiw = vdupq_n_f32(iw);
+
+  for (ffm_node *N1 = begin; N1 != end; N1++) {
+    ffm_int j1 = N1->j;
+    ffm_int f1 = N1->f;
+    ffm_float v1 = N1->v;
+    if (j1 >= model.n || f1 >= model.m)
+      continue;
+
+    for (ffm_node *N2 = N1 + 1; N2 != end; N2++) {
+      ffm_int j2 = N2->j;
+      ffm_int f2 = N2->f;
+      ffm_float v2 = N2->v;
+      if (j2 >= model.n || f2 >= model.m)
+        continue;
+
+      ffm_float *w1 = model.W + j1 * align1 + f2 * align0;
+      ffm_float *w2 = model.W + j2 * align1 + f1 * align0;
+
+      float32x4_t XMMv = vdupq_n_f32(v1 * v2 * r);
+
+      if (do_update) {
+        float32x4_t XMMkappav = vmulq_f32(XMMkappa, XMMv);
+
+        ffm_float *wg1 = w1 + model.k;
+        ffm_float *wg2 = w2 + model.k;
+        for (ffm_int d = 0; d < model.k; d += 4) {
+          float32x4_t XMMw1 = vld1q_f32(w1 + d);
+          float32x4_t XMMw2 = vld1q_f32(w2 + d);
+
+          float32x4_t XMMwg1 = vld1q_f32(wg1 + d);
+          float32x4_t XMMwg2 = vld1q_f32(wg2 + d);
+
+          float32x4_t XMMg1 = vaddq_f32(vmulq_f32(XMMlambda, XMMw1),
+                                    vmulq_f32(XMMkappav, XMMw2));
+          float32x4_t XMMg2 = vaddq_f32(vmulq_f32(XMMlambda, XMMw2),
+                                    vmulq_f32(XMMkappav, XMMw1));
+
+          XMMwg1 = vaddq_f32(XMMwg1, vmulq_f32(XMMg1, XMMg1));
+          XMMwg2 = vaddq_f32(XMMwg2, vmulq_f32(XMMg2, XMMg2));
+
+          XMMw1 = vsubq_f32(
+              XMMw1,
+              vmulq_f32(
+                  XMMeta,
+                  vmulq_f32(XMMiw, vmulq_f32(vrsqrteq_f32(XMMwg1), XMMg1))));
+          XMMw2 = vsubq_f32(
+              XMMw2,
+              vmulq_f32(
+                  XMMeta,
+                  vmulq_f32(XMMiw, vmulq_f32(vrsqrteq_f32(XMMwg2), XMMg2))));
+
+          vst1q_f32(w1 + d, XMMw1);
+          vst1q_f32(w2 + d, XMMw2);
+
+          vst1q_f32(wg1 + d, XMMwg1);
+          vst1q_f32(wg2 + d, XMMwg2);
+        }
+      } else {
+        for (ffm_int d = 0; d < model.k; d += 4) {
+          float32x4_t XMMw1 = vld1q_f32(w1 + d);
+          float32x4_t XMMw2 = vld1q_f32(w2 + d);
+
+          XMMt = vaddq_f32(XMMt, vmulq_f32(vmulq_f32(XMMw1, XMMw2), XMMv));
+        }
+      }
+    }
+  }
+
+  if (do_update)
+    return 0;
+
+  XMMt = vpaddq_f32(XMMt, XMMt);
+  XMMt = vpaddq_f32(XMMt, XMMt);
+  ffm_float t;
+  vst1q_f32(&t, XMMt);
+
+#else
   __m128 XMMkappa = _mm_set1_ps(kappa);
   __m128 XMMeta = _mm_set1_ps(eta);
   __m128 XMMlambda = _mm_set1_ps(lambda);
@@ -118,6 +207,7 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
   ffm_float t;
   _mm_store_ss(&t, XMMt);
 
+#endif
   return t;
 }
 
@@ -137,7 +227,7 @@ ffm_float *malloc_aligned_float(ffm_long size) {
   return (ffm_float *)ptr;
 }
 
-ffm_double calibrate(ffm_double x, ffm_float nds_rate) {
+inline ffm_double calibrate(ffm_double x, ffm_float nds_rate) {
   return x / (x + (1.0 - x) / nds_rate);
 }
 
@@ -151,7 +241,7 @@ ffm_model *init_model(ffm_int n, ffm_int m, ffm_parameter param) {
   model->W = nullptr;
   model->normalization = param.normalization;
   model->best_iteration = -1;
-  model->best_va_loss=numeric_limits<ffm_double>::max();
+  model->best_va_loss = numeric_limits<ffm_double>::max();
 
   try {
     model->W = malloc_aligned_float((ffm_long)n * m * k_aligned * 2);
@@ -322,8 +412,9 @@ shared_ptr<ffm_model> train(ffm_problem *tr, vector<ffm_int> &order,
           ffm_float t = wTx(begin, end, r, *model);
           ffm_float prob = 1 / (1 + exp(-t));
           ffm_float calibrated_prob = calibrate(prob, param.nds_rate);
-          va_loss += -((1 + y) * log(calibrated_prob) + (1 - y) * log(1- calibrated_prob))* iwv;
-
+          va_loss += -((1 + y) * log(calibrated_prob) +
+                       (1 - y) * log(1 - calibrated_prob)) *
+                     iwv;
         }
         if (iwvs == nullptr) {
           va_loss /= va->l;
@@ -486,9 +577,9 @@ ffm_importance_weights *ffm_read_importance_weights(char const *path) {
 void ffm_destroy_problem(ffm_problem **prob) {
   if (prob == nullptr || *prob == nullptr)
     return;
-  delete[](*prob)->X;
-  delete[](*prob)->P;
-  delete[](*prob)->Y;
+  delete[] (*prob)->X;
+  delete[] (*prob)->P;
+  delete[] (*prob)->Y;
   delete *prob;
   *prob = nullptr;
 }
@@ -559,7 +650,7 @@ ffm_model *ffm_load_model(char const *path) {
   ffm_model *model = new ffm_model;
   model->best_iteration = -1;
   model->W = nullptr;
-  model->best_va_loss=numeric_limits<ffm_double>::max();
+  model->best_va_loss = numeric_limits<ffm_double>::max();
 
   f_in >> dummy >> model->n >> dummy >> model->m >> dummy >> model->k >>
       dummy >> model->normalization;
@@ -639,7 +730,8 @@ ffm_model *ffm_train_with_validation(ffm_problem *tr, ffm_problem *va,
   return model_ret;
 }
 
-ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model, ffm_float nds_rate = 1.0) {
+ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model,
+                      ffm_float nds_rate = 1.0) {
   ffm_float r = 1;
   if (model->normalization) {
     r = 0;

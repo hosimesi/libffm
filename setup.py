@@ -14,8 +14,7 @@ except ImportError:
 ext_modules = [
     Extension(
         "ffm.libffm",
-        # extra_compile_args=["-Wall", "-O3", "-std=c++0x", "-march=native", "-DUSESSE"],
-        extra_compile_args=["-Wall", "-O3", "-std=c++0x", "-mcpu=apple-m1", "-DUSESSE"],
+        extra_compile_args=["-Wall", "-O3", "-std=c++0x", "-march=native", "-DUSESSE"],
         sources=[os.path.join("ffm", "libffm" + ext), "ffm.cpp"],
         include_dirs=[".", numpy.get_include()],
         language="c++",
