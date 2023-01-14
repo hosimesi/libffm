@@ -18,7 +18,7 @@
 
 #include "ffm.h"
 
-#ifdef _M_ARM64
+#ifdef __aarch64__
 #include <arm_neon.h>
 #else
 #include <pmmintrin.h>
@@ -41,7 +41,7 @@ inline ffm_float wTx(ffm_node *begin, ffm_node *end, ffm_float r,
   ffm_long align0 = (ffm_long)model.k * 2;
   ffm_long align1 = (ffm_long)model.m * align0;
 
-#ifdef _M_ARM64
+#ifdef __aarch64__
   float32x4_t XMMkappa = vdupq_n_f32(kappa);
   float32x4_t XMMeta = vdupq_n_f32(eta);
   float32x4_t XMMlambda = vdupq_n_f32(lambda);
