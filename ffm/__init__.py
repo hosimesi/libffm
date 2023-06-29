@@ -93,8 +93,10 @@ class Model:
 
 
 def train(
-    train_data: Dataset,
+    train_data: Optional[Dataset] = None,
+    train_path: str = None,
     valid_data: Optional[Dataset] = None,
+    valid_path: str = None,
     eta: float = 0.2,
     lam: float = 0.00002,
     nr_iters: int = 15,
@@ -107,8 +109,10 @@ def train(
     random: bool = True,
     nds_rate: float = 1.0,
 ) -> Model:
-    tr = (train_data.data, train_data.labels)
-    iw = train_data.importance_weights
+    tr, iw = None, None
+    if train_data is not None:
+        tr = (train_data.data, train_data.labels)
+        iw = train_data.importance_weights
 
     va, iwv = None, None
     if valid_data is not None:
@@ -116,8 +120,10 @@ def train(
         iwv = valid_data.importance_weights
 
     weights, best_iteration, normalization, best_va_loss = libffm_train(
-        tr,
+        tr=tr,
+        tr_path=train_path,
         va=va,
+        va_path=valid_path,
         iw=iw,
         iwv=iwv,
         eta=eta,
