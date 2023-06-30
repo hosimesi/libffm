@@ -56,6 +56,7 @@ cdef extern from "ffm.h" namespace "ffm" nogil:
         ffm_float best_va_loss
 
     ffm_model *ffm_train_with_validation(ffm_problem *Tr, ffm_problem *Va, ffm_importance_weights *iws, ffm_importance_weights *iwvs, ffm_parameter param);
+    ffm_problem *ffm_read_problem(char *path);
 
 
 cdef ffm_problem* make_ffm_prob(X, y):
@@ -174,8 +175,10 @@ cdef object _train(
 
 
 def train(
-    tr,
+    tr=None,
+    tr_path=None,
     va=None,
+    va_path=None,
     iw=None,
     iwv=None,
     eta=0.2,
@@ -205,11 +208,18 @@ def train(
     param.nds_rate = nds_rate
 
     cdef:
-        ffm_problem* tr_ptr = make_ffm_prob(tr[0], tr[1])
+        ffm_problem* tr_ptr
         ffm_problem* va_ptr
         ffm_importance_weights *iw_ptr, *iwv_ptr
 
-    if va is not None:
+    if tr_path is not None:
+        tr_ptr = ffm_read_problem(tr_path.encode("utf-8"))
+    else:
+        tr_ptr = make_ffm_prob(tr[0], tr[1])
+
+    if va_path is not None:
+        va_ptr = ffm_read_problem(va_path.encode("utf-8"))
+    elif va is not None:
         va_ptr = make_ffm_prob(va[0], va[1])
     else:
         va_ptr = NULL
