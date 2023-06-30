@@ -94,9 +94,9 @@ class Model:
 
 def train(
     train_data: Optional[Dataset] = None,
-    train_path: str = None,
+    train_path: Optional[str] = None,
     valid_data: Optional[Dataset] = None,
-    valid_path: str = None,
+    valid_path: Optional[str] = None,
     eta: float = 0.2,
     lam: float = 0.00002,
     nr_iters: int = 15,
